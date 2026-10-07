@@ -1,12 +1,10 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
+import { db } from './firebase.js';
+import { collection, addDoc } from 'firebase/firestore';
 import './styles.css';
 import './glass-theme.css';
-
-// 1. 파이어베이스 DB 불러오기
-import { db } from './firebase.js'; 
-import { collection, addDoc } from "firebase/firestore";
 
 // 2. 접속 시 자동으로 데이터를 저장하는 함수
 async function autoSaveData() {
