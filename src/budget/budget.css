@@ -98,3 +98,38 @@
   .mobile-nav { gap: 3px; padding-left: 6px; padding-right: 6px; }
   .mobile-nav .nav-button { font-size: 12px; }
 }
+
+/* Match the app shell: translucent panels, powder-blue tabs and violet actions. */
+.budget-view { color: #586174; }
+.budget-summary > div,
+.budget-record,
+.budget-people article,
+.budget-empty,
+.budget-settlement,
+.budget-sections,
+.budget-category-grid > div {
+  background: rgb(255 255 255 / 68%);
+  border-color: rgb(255 255 255 / 90%);
+  box-shadow: 0 8px 24px rgb(63 76 113 / 7%), inset 0 1px 0 rgb(255 255 255 / 80%);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+}
+.budget-summary > div:nth-child(2) { background: rgb(228 242 251 / 78%); }
+.budget-summary > div:last-child { background: rgb(238 233 250 / 78%); }
+.budget-summary span, .budget-category-grid span, .budget-category-grid small,
+.budget-record p, .budget-record-amount span, .budget-help, .budget-local-note,
+.budget-toolbar p, .budget-people dt { color: #70798b; }
+.budget-summary strong, .budget-record h3, .budget-people h3, .budget-subheading { color: #586174; }
+.budget-sections { background: rgb(235 239 247 / 78%); }
+.budget-sections button { color: #70798b; }
+.budget-sections button[aria-pressed="true"] { background: #c5e6fa; color: #2e5c7a; border: 1px solid #a6d1eb; }
+.budget-primary { color: #4d3f86; background: #e5dcf8; border-color: #cfc2ee; }
+.budget-secondary { color: #5f6b80; background: rgb(255 255 255 / 72%); border-color: #fff; }
+.budget-status.paid { background: #e4f3ed; color: #547966; }
+.budget-status.planned { background: #e8e9f8; color: #64669b; }
+.budget-settlement { background: rgb(235 230 250 / 78%); border-color: #d7cdee; }
+.budget-dialog { background: rgb(255 251 253 / 91%); color: #586174; border-color: #fff; box-shadow: 0 20px 70px rgb(55 65 97 / 24%); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); }
+.budget-dialog input:not([type=checkbox]), .budget-dialog select, .budget-dialog textarea { color: #586174; background: rgb(255 255 255 / 88%); border-color: #dbe0eb; }
+.budget-dialog label, .budget-dialog legend { color: #626b7c; }
+.budget-row-actions button { color: #6e7788; background: rgb(255 255 255 / 58%); border-color: #fff; }
+.budget-person-balance { border-color: #e4e7f0; }
