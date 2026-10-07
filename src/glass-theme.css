@@ -1,0 +1,130 @@
+/* Opaque text on softly frosted surfaces; colour is reserved for accents. */
+:root {
+  --ink: #252b3d;
+  --muted: #586278;
+  --accent: #6250b5;
+  --glass: rgb(255 255 255 / 80%);
+  --glass-line: rgb(255 255 255 / 94%);
+  --line: #dfe3ef;
+  --color-gray-50: #f5f6fa;
+  --color-gray-100: #eaedf4;
+  --color-gray-200: #dce1ec;
+  --color-gray-300: #b6bed0;
+  --color-gray-400: #646e84;
+  --color-gray-500: #586278;
+  --color-gray-600: #485268;
+  --color-gray-700: #394258;
+  --color-gray-800: #2c3449;
+  --color-gray-900: #252b3d;
+  color: var(--ink);
+  background: #f2f3fa;
+}
+body {
+  background:
+    radial-gradient(ellipse 70% 650px at 85% 0%, #cddff4a6, transparent 85%),
+    radial-gradient(ellipse 55% 700px at 10% 25%, #f4dfe8a6, transparent 85%),
+    radial-gradient(ellipse 60% 700px at 100% 70%, #e0daf4a6, transparent 85%),
+    #f5f5fa;
+  color: var(--ink);
+}
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible { outline-color: var(--accent); }
+.sidebar, .trip-badge, .trip-stats, .detail-panel, .overview-grid .shadow-sm, .spa-banner {
+  background: var(--glass);
+  border: 1px solid var(--glass-line);
+  box-shadow: 0 8px 32px #34416808, inset 0 1px 0 #fff;
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+}
+.sidebar { border-radius: 0; border-right-color: #e2e5f0; }
+.brand { color: #343b55; }
+.brand-icon { display: grid; place-items: center; color: #5f54a4; background: linear-gradient(135deg, #e0ecfa, #e8e1f7); border: 1px solid #fff; border-radius: 13px; }
+.brand-dot { color: #6c63b4; }
+.sidebar-label, .sidebar-footer { color: var(--muted); }
+.nav-button { color: #515b72; border: 1px solid transparent; border-radius: 13px; }
+.nav-button:hover { background: #ececf680; }
+.nav-button.selected { color: #493b91; background: linear-gradient(115deg, #e8e4f8, #e3edfb); border-color: #cfc8ed; box-shadow: 0 3px 12px #685b9d08; }
+.sidebar-note { background: linear-gradient(145deg, #edf3fc, #efebf8 60%, #f8edf2); border: 1px solid #fff; border-radius: 18px; color: #39425a; }
+.sidebar-note h3 { font-size: 16px; }
+.sidebar-note p, .sidebar-note > span { color: #566079; }
+.topbar { border-color: #dde1ed; color: var(--muted); }
+.topbar strong { color: var(--ink); }
+.avatar { background: #e6e1f6; color: #544789; border-color: #f4f5fa; }
+.avatar.second { background: #dae9f7; color: #385c7f; }
+.page-title h1 { color: var(--ink); letter-spacing: -.8px; }
+.trip-badge { color: #4d5670; border-radius: 12px; }
+.trip-badge svg { color: #6755ae; }
+.hero {
+  height: 350px;
+  border: 1px solid #fff;
+  border-radius: 24px;
+  box-shadow: 0 10px 30px #45517814;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  padding: 24px;
+}
+.hero-shade { background: linear-gradient(90deg, #bed2e520, #a7bde000); }
+.hero-content {
+  width: min(440px, 100%);
+  padding: 25px 28px;
+  border: 1px solid #fffffff0;
+  border-radius: 20px;
+  background: rgb(255 255 255 / 87%);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 8px 24px #273d6612;
+  color: var(--ink);
+}
+.hero-label { color: #435d77; background: #e8f1facc; border-color: #ceddec; font-size: 13px; letter-spacing: 1px; border-radius: 7px; }
+.hero h2 { color: var(--ink); font-size: 34px; margin: 16px 0 6px; }
+.hero p { color: #4c5970; }
+.hero button { color: #fff; background: #6250b5; border: 1px solid #5947aa; border-radius: 10px; box-shadow: 0 4px 12px #6250b520; font-size: 15px; }
+.trip-stats { border-radius: 18px; }
+.trip-stats > div { border-color: #dde3ee; }
+.trip-stats span { color: #596378; }
+.trip-stats strong { color: #2c3449; }
+.trip-stats svg { color: #6453a6; }
+.trip-stats > div:nth-child(2n) svg { color: #39749d; }
+.eyebrow { color: #635391; letter-spacing: 1.4px; }
+.section-heading { color: var(--ink); }
+.section-heading > svg { color: #6a60a0; }
+.overview-grid .rounded-2xl { border-radius: 20px; }
+.overview-grid .shadow-sm { border-color: #fff; }
+.travel-note, .page-footer { color: #586278; }
+.spa-banner { background: linear-gradient(115deg, #e8f1fbd9, #eeebf9eb 65%, #f8edf3db); border-radius: 20px; color: #30384e; }
+.spa-banner-icon { background: #ffffffb3; color: #6555a5; border: 1px solid #fff; }
+.spa-banner p { color: #515b73; }
+.spa-banner button { background: #ffffffd9; color: #51438e; border-color: #c9c2e8; border-radius: 10px; }
+.page-footer { border-color: #dce1ee; }
+.detail-panel { border-radius: 20px; }
+.day-tabs { background: #edf0f7; border-color: #dce1ee; border-radius: 14px; }
+.day-tab { color: #4e5972; }
+.day-tab:hover { background: #e2e6f2; }
+.day-tab.active { background: #6250b5; color: #fff; border-color: #5947aa; box-shadow: 0 3px 10px #6250b520; }
+.day-tab-date { color: inherit; }
+.schedule-card { background: #fffffff0; border-color: #e0e5ef; border-radius: 14px; box-shadow: 0 3px 10px #34416805; }
+.spa-categories { background: #f8f9fd; border-color: #e0e4ef; }
+.spa-categories button[aria-pressed="true"] { background: #6250b5; color: #fff; border-color: #5947aa; }
+.spa-dialog { background: #fcfcff; border: 1px solid #fff; }
+/* Keep dialogs attached to the viewport: their parents must not create a backdrop-filter containing block. */
+.detail-panel { -webkit-backdrop-filter: none; backdrop-filter: none; background: #ffffffde; }
+@media (max-width: 850px) {
+  .mobile-nav { background: #fffffff0; border-color: #dce1ed; box-shadow: 0 -5px 24px #424c7310; -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); }
+  .mobile-nav .nav-button { color: #515b72; border-radius: 12px; }
+  .mobile-nav .nav-button.selected { color: #fff; background: #6250b5; border-color: #5947aa; box-shadow: 0 3px 10px #6250b51a; }
+}
+@media (max-width: 600px) {
+  .page-title h1 { font-size: 26px; }
+  .hero { height: 320px; padding: 16px; border-radius: 20px; background-position: 58% center; }
+  .hero-content { padding: 22px; border-radius: 16px; }
+  .hero h2 { font-size: 28px; }
+  .hero-shade { background: #bed2e510; }
+  .trip-stats strong { font-size: 15px; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .sidebar, .trip-badge, .trip-stats, .detail-panel, .overview-grid .shadow-sm, .spa-banner, .hero-content, .mobile-nav {
+    background-color: #fafbff;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
