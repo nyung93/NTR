@@ -10,13 +10,14 @@
     "test": "node --test src/budget/model.test.js"
   },
   "dependencies": {
+    "firebase": "^12.19.0",
+    "lucide-react": "^0.468.0",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0",
-    "lucide-react": "^0.468.0"
+    "react-dom": "^19.2.0"
   },
   "devDependencies": {
-    "vite": "^7.3.0",
+    "@tailwindcss/vite": "^4.1.0",
     "tailwindcss": "^4.1.0",
-    "@tailwindcss/vite": "^4.1.0"
+    "vite": "^7.3.0"
   }
 }
