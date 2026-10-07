@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   PlaneTakeoff, 
   PlaneLanding, 
@@ -149,7 +149,7 @@ const spaCategories = [
 
 const getMassageById = (id) => spaCategories.flatMap(c => c.items).find(i => i.id === id);
 
-const tripDays = [
+const defaultTripDays = [
   { id: 'day1', date: '3.04 (목)', day: '1일차' },
   { id: 'day2', date: '3.05 (금)', day: '2일차' },
   { id: 'day3', date: '3.06 (토)', day: '3일차' },
@@ -320,8 +320,8 @@ const HotelCard = ({ hotel }) => {
   );
 };
 
-const ItineraryView = ({ itinerary, setItinerary, massageSchedule }) => {
-  const [selectedDay, setSelectedDay] = useState('day2');
+const ItineraryView = ({ itinerary, setItinerary, massageSchedule, days: tripDays = defaultTripDays }) => {
+  const [selectedDay, setSelectedDay] = useState(tripDays === defaultTripDays ? 'day2' : tripDays[0]?.id);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newSchedule, setNewSchedule] = useState({ time: '12:00', title: '', category: 'food', location: '' });
 
@@ -377,6 +377,7 @@ const ItineraryView = ({ itinerary, setItinerary, massageSchedule }) => {
           {/* Vertical Timeline Line */}
           <div className="absolute left-[64px] top-4 bottom-4 w-[2px] bg-gray-100 z-0"></div>
 
+          {!itinerary[selectedDay]?.length && <p className="empty-day">등록된 일정이 없습니다. 아래 버튼으로 일정을 추가하세요.</p>}
           {itinerary[selectedDay]?.map((item, index) => {
             const { Icon, color, bg, lightBg, text } = getCategoryMeta(item.category);
             const nextItem = itinerary[selectedDay][index + 1];
@@ -625,7 +626,7 @@ const MassageView = ({ schedule, setSchedule }) => {
     }));
   };
 
-  const spaDays = tripDays
+  const spaDays = defaultTripDays
     .map((day, index) => ({ ...day, originalIndex: index }))
     .filter(day => ['금', '토', '월'].some(d => day.date.includes(d)));
 
@@ -868,23 +869,77 @@ function useSavedState(key, initial) {
   useEffect(() => { try { localStorage.setItem(key, JSON.stringify(value)); } catch {} }, [key, value]);
   return [value, setValue];
 }
-export default function App() {
+function TripWorkspace({ trip, trips, selectTrip, openAddTrip }) {
   const [activeTab, setActiveTab] = useState('home');
-  const [massageSchedule, setMassageSchedule] = useSavedState('ntr-spa-v1', {});
-  const [itinerary, setItinerary] = useSavedState('ntr-itinerary-v1', initialItinerary);
-  const tabs = [{id:'home', title:'여행 한눈에', icon:Home}, {id:'itinerary', title:'여행 일정', icon:CalendarDays}, {id:'massage', title:'스파 플래너', icon:Sparkles}];
+  const [massageSchedule, setMassageSchedule] = useSavedState(trip.id === 'nha-trang' ? 'ntr-spa-v1' : `trip-${trip.id}-spa-v1`, {});
+  const [itinerary, setItinerary] = useSavedState(trip.id === 'nha-trang' ? 'ntr-itinerary-v1' : `trip-${trip.id}-itinerary-v1`, trip.id === 'nha-trang' ? initialItinerary : {});
+  const isNhaTrang = trip.id === 'nha-trang';
+  const days = isNhaTrang ? defaultTripDays : makeTripDays(trip.start, trip.end);
+  const dateLabel = `${trip.start.replaceAll('-', '.')} — ${trip.end.replaceAll('-', '.')}`;
+  const duration = `${days.length - 1}박 ${days.length}일`;
+  const tripPicker = <div className="trip-picker"><label>여행지 선택<select value={trip.id} onChange={e => selectTrip(e.target.value)}>{trips.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}</select></label><button type="button" onClick={openAddTrip}>+ 여행 추가</button></div>;
+  const tabs = [{id:'home', title:'여행 한눈에', icon:Home}, {id:'itinerary', title:'여행 일정', icon:CalendarDays}, ...(isNhaTrang ? [{id:'massage', title:'스파 플래너', icon:Sparkles}] : [])];
   const navigation = tabs.map(({id,title,icon:Icon}) => <button key={id} aria-current={activeTab === id ? 'page' : undefined} onClick={() => { setActiveTab(id); window.scrollTo({ top: 0, behavior: 'instant' }); }} className={'nav-button ' + (activeTab === id ? 'selected' : '')}><Icon size={20}/><span>{title}</span>{activeTab === id && <ChevronRight size={16} className="nav-arrow"/>}</button>);
   return <div className="app-shell">
-    <aside className="sidebar"><a href="#" className="brand" onClick={() => setActiveTab('home')}><span className="brand-icon"><Navigation size={22}/></span> somewhere<span className="brand-dot">.</span></a><p className="sidebar-label">여행 메뉴</p><nav aria-label="주 메뉴">{navigation}</nav><div className="sidebar-note"><h3>휴식 · 호캉스</h3><p>민영 · 다미 / 나트랑<br/>2027년 3월 4일 — 9일</p><span>VIETNAM · 2027</span></div><div className="sidebar-footer">2027.03.04 — 03.09</div></aside>
-    <main className="workspace"><header className="topbar"><span>나의 여행 <ChevronRight size={14}/> <strong>나트랑</strong></span><div className="travelers"><span className="avatar">민</span><span className="avatar second">다</span><span>민영 · 다미</span></div></header>
-      <section className="page-intro"><div className="page-title"><h1>{activeTab === 'home' ? '나트랑 여행 계획' : activeTab === 'itinerary' ? '여행 일정' : '스파 계획'}</h1></div><span className="trip-badge"><CalendarDays size={16}/> 2027.03.04 — 03.09</span></section>
-      {activeTab === 'home' ? <>
+    <aside className="sidebar"><a href="#" className="brand" onClick={() => setActiveTab('home')}><span className="brand-icon"><Navigation size={22}/></span> somewhere<span className="brand-dot">.</span></a>{tripPicker}<p className="sidebar-label">여행 메뉴</p><nav aria-label="주 메뉴">{navigation}</nav></aside>
+    <main className="workspace"><header className="topbar"><span>나의 여행 <ChevronRight size={14}/> <strong>{trip.name}</strong></span>{isNhaTrang && <div className="travelers"><span className="avatar">민</span><span className="avatar second">다</span><span>민영 · 다미</span></div>}</header><div className="mobile-trip-picker">{tripPicker}</div>
+      <section className="page-intro"><div className="page-title"><h1>{activeTab === 'home' ? `${trip.name} 여행 계획` : activeTab === 'itinerary' ? '여행 일정' : '스파 계획'}</h1></div><span className="trip-badge"><CalendarDays size={16}/> {dateLabel}</span></section>
+      {activeTab === 'home' ? isNhaTrang ? <>
         <section className="hero"><div className="hero-shade"/><div className="hero-content"><span className="hero-label"><MapPin size={14}/> VIETNAM, NHA TRANG</span><h2>나트랑 · 5박 6일</h2><p>휴식 · 호캉스</p><button onClick={() => setActiveTab('itinerary')}>일정 보기 <ChevronRight size={17}/></button></div></section>
         <section className="trip-stats"><div><CalendarDays/><span>여행 기간<strong>5박 6일</strong></span></div><div><Luggage/><span>여행자<strong>민영 · 다미</strong></span></div><div><Building2/><span>숙소<strong>호텔 & 풀빌라</strong></span></div><div><Sparkles/><span>이번 여행의 테마<strong>휴식 · 호캉스</strong></span></div></section>
         <div className="overview-grid"><section><div className="section-heading"><div><span className="eyebrow">FLIGHTS</span><h2>항공편</h2></div><PlaneTakeoff size={22}/></div>{tripData.flights.map((flight,index) => <FlightCard key={index} flight={flight}/>)}<div className="travel-note"><Info size={17}/><span>항공편의 출발·도착 시간은 각 공항 현지 시간 기준입니다.</span></div></section><section><div className="section-heading"><div><span className="eyebrow">HOTELS</span><h2>숙소</h2></div><Building2 size={22}/></div>{tripData.hotels.map((hotel,index) => <HotelCard key={index} hotel={hotel}/>)}</section></div>
         <section className="spa-banner"><div className="spa-banner-icon"><Sparkles size={28}/></div><div><span className="eyebrow">SPA</span><h3>리조트 스파</h3><p>날짜별 프로그램과 이용 횟수를 확인하세요.</p></div><button onClick={() => setActiveTab('massage')}>스파 계획하기 <ChevronRight size={16}/></button></section>
-      </> : <section className="detail-panel">{activeTab === 'itinerary' ? <ItineraryView itinerary={itinerary} setItinerary={setItinerary} massageSchedule={massageSchedule}/> : <MassageView schedule={massageSchedule} setSchedule={setMassageSchedule}/>}</section>}
-      <footer className="page-footer"><span>나트랑 여행 계획</span><span>2027.03.04 — 03.09</span></footer>
-    </main><nav className="mobile-nav" aria-label="모바일 메뉴">{navigation}</nav>
+      </> : <section className="new-trip-overview"><MapPin size={32}/><h2>{trip.name}</h2><p>{dateLabel} · {duration}</p><p>여행 일정에서 날짜별 계획을 추가하세요.</p><button className="primary-action" onClick={() => setActiveTab('itinerary')}>일정 보기 <ChevronRight size={17}/></button></section> : <section className="detail-panel">{activeTab === 'itinerary' ? <ItineraryView days={days} itinerary={itinerary} setItinerary={setItinerary} massageSchedule={massageSchedule}/> : <MassageView schedule={massageSchedule} setSchedule={setMassageSchedule}/>}</section>}
+      <footer className="page-footer"><span>{trip.name} 여행 계획</span><span>{dateLabel}</span></footer>
+    </main><nav className="mobile-nav" style={{gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))`}} aria-label="모바일 메뉴">{navigation}</nav>
   </div>;
+}
+
+function makeTripDays(start, end) {
+  const count = Math.round((Date.parse(end) - Date.parse(start)) / 86400000) + 1;
+  return Array.from({ length: count }, (_, index) => {
+    const date = new Date(Date.parse(start) + index * 86400000);
+    return { id: `day${index + 1}`, day: `${index + 1}일차`, date: `${date.getUTCMonth() + 1}.${String(date.getUTCDate()).padStart(2, '0')} (${'일월화수목금토'[date.getUTCDay()]})` };
+  });
+}
+
+function AddTripDialog({ onClose, onAdd }) {
+  const dialog = useRef(null);
+  const [name, setName] = useState('');
+  const [start, setStart] = useState('');
+  const [end, setEnd] = useState('');
+  const [error, setError] = useState('');
+  useEffect(() => { dialog.current.showModal(); }, []);
+  const submit = event => {
+    event.preventDefault();
+    if (!name.trim()) return setError('여행지를 입력하세요.');
+    const count = (Date.parse(end) - Date.parse(start)) / 86400000 + 1;
+    if (!Number.isFinite(count) || count < 1 || count > 90) return setError('여행 기간은 출발일부터 1~90일 사이로 선택하세요.');
+    onAdd({ id: crypto.randomUUID(), name: name.trim(), start, end });
+  };
+  return <dialog ref={dialog} className="add-trip-dialog" aria-labelledby="add-trip-title" onCancel={event => { event.preventDefault(); onClose(); }}>
+    <form onSubmit={submit}>
+      <div className="add-trip-heading"><h2 id="add-trip-title">여행 추가</h2><button type="button" aria-label="여행 추가 닫기" onClick={onClose}><X size={22}/></button></div>
+      <label>여행지<input autoFocus required maxLength={40} placeholder="예: 도쿄" value={name} onChange={e => setName(e.target.value)}/></label>
+      <label>출발일<input required type="date" value={start} onChange={e => setStart(e.target.value)}/></label>
+      <label>마지막 날<input required type="date" min={start} value={end} onChange={e => setEnd(e.target.value)}/></label>
+      <p className="trip-storage-note">여행과 일정은 현재 브라우저에 저장됩니다.</p>
+      {error && <p role="alert" className="form-error">{error}</p>}
+      <div className="add-trip-actions"><button type="button" onClick={onClose}>취소</button><button className="primary-action" type="submit">여행 만들기</button></div>
+    </form>
+  </dialog>;
+}
+
+export default function App() {
+  const [trips, setTrips] = useSavedState('travel-planner-trips-v1', [{ id: 'nha-trang', name: '나트랑', start: '2027-03-04', end: '2027-03-09' }]);
+  const [selectedId, setSelectedId] = useSavedState('travel-planner-selected-v1', 'nha-trang');
+  const [adding, setAdding] = useState(false);
+  const selected = trips.find(trip => trip.id === selectedId) || trips[0];
+  const addTrip = trip => {
+    setTrips(previous => [...previous, trip]);
+    setSelectedId(trip.id);
+    setAdding(false);
+    window.scrollTo(0, 0);
+  };
+  return <><TripWorkspace key={selected.id} trip={selected} trips={trips} selectTrip={id => { setSelectedId(id); window.scrollTo(0, 0); }} openAddTrip={() => setAdding(true)}/>{adding && <AddTripDialog onClose={() => setAdding(false)} onAdd={addTrip}/>}</>;
 }
