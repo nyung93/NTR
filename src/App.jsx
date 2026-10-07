@@ -70,14 +70,14 @@ const tripData = {
       location: "나트랑 시내",
       checkIn: "2027.03.04(목)",
       checkOut: "2027.03.05(금)",
-      imageUrl: "/images/stay.svg"
+      imageUrl: "/images/sata-hotel.png"
     },
     {
       name: "퓨전 리조트 깜란 (Fusion Resort Cam Ranh)",
       location: "나트랑, 베트남",
       checkIn: "2027.03.05(금)",
       checkOut: "2027.03.08(월)",
-      imageUrl: "/images/coast.svg"
+      imageUrl: "/images/fusion-resort.png"
     }
   ]
 };
@@ -284,10 +284,13 @@ const FlightCard = ({ flight }) => {
 const HotelCard = ({ hotel }) => {
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-6">
-      <div 
-        className="h-44 w-full bg-cover bg-center"
-        style={{ backgroundImage: `url(${hotel.imageUrl})` }}
-      ></div>
+      <img
+        className="hotel-photo"
+        src={hotel.imageUrl}
+        alt={`${hotel.name} 숙소 전경`}
+        loading="lazy"
+        decoding="async"
+      />
       <div className="p-5">
         <div className="flex justify-between items-start mb-2">
           <div>
