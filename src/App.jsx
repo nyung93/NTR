@@ -185,11 +185,14 @@ const initialItinerary = {
     { id: '3-5', time: '18:30', category: 'food', title: '레스토랑 야경 보며 저녁 식사', location: '프레시 레스토랑', mapQuery: 'Fusion Resort Cam Ranh' }
   ],
   day4: [
-    { id: '4-1', time: '09:00', category: 'food', title: '늦잠 후 여유로운 조식', location: '프레시 레스토랑', mapQuery: 'Fusion Resort Cam Ranh' },
-    { id: '4-2', time: '10:30', category: 'rest', title: '피트니스 센터 가벼운 운동 (인클라인 등)', location: '퓨전 리조트 피트니스', mapQuery: 'Fusion Resort Cam Ranh' },
-    { id: '4-3', time: '12:30', category: 'transport', title: '택시로 깜란 핫플 이동 (점심 및 커피)', location: '깜란 시내', mapQuery: 'Cam Ranh' },
-    { id: '4-4', time: '15:30', category: 'rest', title: '리조트 복귀 후 프라이빗 풀 수영', location: '퓨전 리조트 깜란', mapQuery: 'Fusion Resort Cam Ranh' },
-    { id: '4-5', time: '19:00', category: 'food', title: '배달K 저녁 (반미, 숯불 꼬치구이 등)', location: '퓨전 리조트 깜란', mapQuery: 'Fusion Resort Cam Ranh' }
+    { id: '4-1', time: '08:30', category: 'food', title: "늦잠 후 '애니웨어 애니타임' 조식 서비스 이용", location: '퓨전 리조트 깜란', mapQuery: 'Fusion Resort Cam Ranh' },
+    { id: '4-2', time: '10:00', category: 'rest', title: '피트니스 센터 가벼운 운동 (인클라인 트레드밀 등)', location: '퓨전 리조트 피트니스 센터', mapQuery: 'Fusion Resort Cam Ranh' },
+    { id: '4-3', time: '11:30', category: 'transport', title: '환복 후 그랩 또는 대절 차량으로 아이리조트 출발', location: '퓨전 리조트 깜란', mapQuery: 'Fusion Resort Cam Ranh' },
+    { id: '4-4', time: '12:45', category: 'rest', title: '아이리조트 도착 및 머드스파 진행', location: '아이리조트 나트랑', mapQuery: 'I-Resort Nha Trang' },
+    { id: '4-5', time: '15:00', category: 'food', title: '세안 후 시내 이동 및 점심 식사 (촌촌킴, 퍼홍 등)', location: '나트랑 시내', mapQuery: 'Nha Trang' },
+    { id: '4-6', time: '16:30', category: 'transport', title: '시내에서 차량을 타고 퓨전 리조트로 복귀', location: '나트랑 시내', mapQuery: 'Nha Trang' },
+    { id: '4-7', time: '17:45', category: 'rest', title: '프라이빗 풀에서 물놀이하며 휴식 (무료 마사지는 출국 전날 이용)', location: '퓨전 리조트 깜란', mapQuery: 'Fusion Resort Cam Ranh' },
+    { id: '4-8', time: '19:00', category: 'food', title: '배달K 풀사이드 디너 (반미, 숯불 꼬치구이 등)', location: '퓨전 리조트 깜란', mapQuery: 'Fusion Resort Cam Ranh' }
   ],
   day5: [
     { id: '5-1', time: '08:30', category: 'rest', title: '조식 및 프라이빗 풀 마지막 수영', location: '퓨전 리조트 깜란', mapQuery: 'Fusion Resort Cam Ranh' },
@@ -874,7 +877,7 @@ function useSavedState(key, initial) {
 function TripWorkspace({ trip, trips, selectTrip, openAddTrip }) {
   const [activeTab, setActiveTab] = useState('home');
   const [massageSchedule, setMassageSchedule] = useSavedState(trip.id === 'nha-trang' ? 'ntr-spa-v1' : `trip-${trip.id}-spa-v1`, {});
-  const [itinerary, setItinerary] = useSavedState(trip.id === 'nha-trang' ? 'ntr-itinerary-v1' : `trip-${trip.id}-itinerary-v1`, trip.id === 'nha-trang' ? initialItinerary : {});
+  const [itinerary, setItinerary] = useSavedState(trip.id === 'nha-trang' ? 'ntr-itinerary-v2' : `trip-${trip.id}-itinerary-v1`, trip.id === 'nha-trang' ? initialItinerary : {});
   const isNhaTrang = trip.id === 'nha-trang';
   const days = isNhaTrang ? defaultTripDays : makeTripDays(trip.start, trip.end);
   const dateLabel = `${trip.start.replaceAll('-', '.')} — ${trip.end.replaceAll('-', '.')}`;
