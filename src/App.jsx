@@ -1,5 +1,7 @@
+import BudgetView from './budget/BudgetView';
 import React, { useState, useEffect, useRef } from 'react';
 import { 
+  Wallet,
   PlaneTakeoff, 
   PlaneLanding, 
   Building2, 
@@ -878,18 +880,18 @@ function TripWorkspace({ trip, trips, selectTrip, openAddTrip }) {
   const dateLabel = `${trip.start.replaceAll('-', '.')} — ${trip.end.replaceAll('-', '.')}`;
   const duration = `${days.length - 1}박 ${days.length}일`;
   const tripPicker = <div className="trip-picker"><label>여행지 선택<select value={trip.id} onChange={e => selectTrip(e.target.value)}>{trips.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}</select></label><button type="button" onClick={openAddTrip}>+ 여행 추가</button></div>;
-  const tabs = [{id:'home', title:'여행 한눈에', icon:Home}, {id:'itinerary', title:'여행 일정', icon:CalendarDays}, ...(isNhaTrang ? [{id:'massage', title:'스파 플래너', icon:Sparkles}] : [])];
+  const tabs = [{id:'home', title:'여행 한눈에', icon:Home}, {id:'itinerary', title:'여행 일정', icon:CalendarDays}, {id:'budget', title:'예산·정산', icon:Wallet}, ...(isNhaTrang ? [{id:'massage', title:'스파 플래너', icon:Sparkles}] : [])];
   const navigation = tabs.map(({id,title,icon:Icon}) => <button key={id} aria-current={activeTab === id ? 'page' : undefined} onClick={() => { setActiveTab(id); window.scrollTo({ top: 0, behavior: 'instant' }); }} className={'nav-button ' + (activeTab === id ? 'selected' : '')}><Icon size={20}/><span>{title}</span>{activeTab === id && <ChevronRight size={16} className="nav-arrow"/>}</button>);
   return <div className="app-shell">
     <aside className="sidebar"><a href="#" className="brand" onClick={() => setActiveTab('home')}><span className="brand-icon"><Navigation size={22}/></span> somewhere<span className="brand-dot">.</span></a>{tripPicker}<p className="sidebar-label">여행 메뉴</p><nav aria-label="주 메뉴">{navigation}</nav></aside>
     <main className="workspace"><header className="topbar"><span>나의 여행 <ChevronRight size={14}/> <strong>{trip.name}</strong></span>{isNhaTrang && <div className="travelers"><span className="avatar">민</span><span className="avatar second">다</span><span>민영 · 다미</span></div>}</header><div className="mobile-trip-picker">{tripPicker}</div>
-      <section className="page-intro"><div className="page-title"><h1>{activeTab === 'home' ? `${trip.name} 여행 계획` : activeTab === 'itinerary' ? '여행 일정' : '스파 계획'}</h1></div><span className="trip-badge"><CalendarDays size={16}/> {dateLabel}</span></section>
+      <section className="page-intro"><div className="page-title"><h1>{activeTab === 'home' ? `${trip.name} 여행 계획` : activeTab === 'itinerary' ? '여행 일정' : activeTab === 'budget' ? '예산·정산' : '스파 계획'}</h1></div><span className="trip-badge"><CalendarDays size={16}/> {dateLabel}</span></section>
       {activeTab === 'home' ? isNhaTrang ? <>
         <section className="hero"><div className="hero-shade"/><div className="hero-content"><span className="hero-label"><MapPin size={14}/> VIETNAM, NHA TRANG</span><h2>나트랑 · 5박 6일</h2><p>휴식 · 호캉스</p><button onClick={() => setActiveTab('itinerary')}>일정 보기 <ChevronRight size={17}/></button></div></section>
         <section className="trip-stats"><div><CalendarDays/><span>여행 기간<strong>5박 6일</strong></span></div><div><Luggage/><span>여행자<strong>민영 · 다미</strong></span></div><div><Building2/><span>숙소<strong>호텔 & 풀빌라</strong></span></div><div><Sparkles/><span>이번 여행의 테마<strong>휴식 · 호캉스</strong></span></div></section>
         <div className="overview-grid"><section><div className="section-heading"><div><span className="eyebrow">FLIGHTS</span><h2>항공편</h2></div><PlaneTakeoff size={22}/></div>{tripData.flights.map((flight,index) => <FlightCard key={index} flight={flight}/>)}<div className="travel-note"><Info size={17}/><span>항공편의 출발·도착 시간은 각 공항 현지 시간 기준입니다.</span></div></section><section><div className="section-heading"><div><span className="eyebrow">HOTELS</span><h2>숙소</h2></div><Building2 size={22}/></div>{tripData.hotels.map((hotel,index) => <HotelCard key={index} hotel={hotel}/>)}</section></div>
         <section className="spa-banner"><div className="spa-banner-icon"><Sparkles size={28}/></div><div><span className="eyebrow">SPA</span><h3>리조트 스파</h3><p>날짜별 프로그램과 이용 횟수를 확인하세요.</p></div><button onClick={() => setActiveTab('massage')}>스파 계획하기 <ChevronRight size={16}/></button></section>
-      </> : <section className="new-trip-overview"><MapPin size={32}/><h2>{trip.name}</h2><p>{dateLabel} · {duration}</p><p>여행 일정에서 날짜별 계획을 추가하세요.</p><button className="primary-action" onClick={() => setActiveTab('itinerary')}>일정 보기 <ChevronRight size={17}/></button></section> : <section className="detail-panel">{activeTab === 'itinerary' ? <ItineraryView days={days} itinerary={itinerary} setItinerary={setItinerary} massageSchedule={massageSchedule}/> : <MassageView schedule={massageSchedule} setSchedule={setMassageSchedule}/>}</section>}
+      </> : <section className="new-trip-overview"><MapPin size={32}/><h2>{trip.name}</h2><p>{dateLabel} · {duration}</p><p>여행 일정에서 날짜별 계획을 추가하세요.</p><button className="primary-action" onClick={() => setActiveTab('itinerary')}>일정 보기 <ChevronRight size={17}/></button></section> : <section className="detail-panel">{activeTab === 'itinerary' ? <ItineraryView days={days} itinerary={itinerary} setItinerary={setItinerary} massageSchedule={massageSchedule}/> : activeTab === 'budget' ? <BudgetView trip={trip}/> : <MassageView schedule={massageSchedule} setSchedule={setMassageSchedule}/>}</section>}
       <footer className="page-footer"><span>{trip.name} 여행 계획</span><span>{dateLabel}</span></footer>
     </main><nav className="mobile-nav" style={{gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))`}} aria-label="모바일 메뉴">{navigation}</nav>
   </div>;
