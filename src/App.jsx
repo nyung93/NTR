@@ -208,14 +208,14 @@ const initialItinerary = {
 
 const getCategoryMeta = (type) => {
   switch(type) {
-    case 'flight': return { Icon: PlaneTakeoff, color: 'text-[#407FFF]', bg: 'bg-[#407FFF]', lightBg: 'bg-[#407FFF]/10', text: '비행' };
-    case 'hotel': return { Icon: BedDouble, color: 'text-[#00CBA8]', bg: 'bg-[#00CBA8]', lightBg: 'bg-[#00CBA8]/10', text: '숙소' };
-    case 'food': return { Icon: Utensils, color: 'text-gray-800', bg: 'bg-[#FFEC6B]', lightBg: 'bg-[#FFEC6B]/40', text: '식사' };
-    case 'shopping': return { Icon: ShoppingBag, color: 'text-[#FF88E4]', bg: 'bg-[#FF88E4]', lightBg: 'bg-[#FF88E4]/10', text: '쇼핑' };
-    case 'sightseeing': return { Icon: Camera, color: 'text-[#00CBA8]', bg: 'bg-[#00CBA8]', lightBg: 'bg-[#00CBA8]/10', text: '관광' };
-    case 'rest': return { Icon: Coffee, color: 'text-[#407FFF]', bg: 'bg-[#407FFF]', lightBg: 'bg-[#407FFF]/10', text: '휴식' };
+    case 'flight': return { Icon: PlaneTakeoff, color: 'text-[#527395]', bg: 'bg-[#527395]', lightBg: 'bg-[#527395]/10', text: '비행' };
+    case 'hotel': return { Icon: BedDouble, color: 'text-[#9B5476]', bg: 'bg-[#9B5476]', lightBg: 'bg-[#9B5476]/10', text: '숙소' };
+    case 'food': return { Icon: Utensils, color: 'text-gray-800', bg: 'bg-[#F4EAC9]', lightBg: 'bg-[#F4EAC9]/40', text: '식사' };
+    case 'shopping': return { Icon: ShoppingBag, color: 'text-[#956587]', bg: 'bg-[#956587]', lightBg: 'bg-[#956587]/10', text: '쇼핑' };
+    case 'sightseeing': return { Icon: Camera, color: 'text-[#9B5476]', bg: 'bg-[#9B5476]', lightBg: 'bg-[#9B5476]/10', text: '관광' };
+    case 'rest': return { Icon: Coffee, color: 'text-[#527395]', bg: 'bg-[#527395]', lightBg: 'bg-[#527395]/10', text: '휴식' };
     case 'transport': return { Icon: Car, color: 'text-gray-600', bg: 'bg-gray-200', lightBg: 'bg-gray-100', text: '이동' };
-    case 'finish': return { Icon: Flag, color: 'text-[#FF88E4]', bg: 'bg-[#FF88E4]', lightBg: 'bg-[#FF88E4]/10', text: '완료' };
+    case 'finish': return { Icon: Flag, color: 'text-[#956587]', bg: 'bg-[#956587]', lightBg: 'bg-[#956587]/10', text: '완료' };
     default: return { Icon: MapPin, color: 'text-gray-500', bg: 'bg-gray-500', lightBg: 'bg-gray-50', text: '일정' };
   }
 };
@@ -242,7 +242,7 @@ const FlightCard = ({ flight }) => {
     <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 mb-4">
       <div className="flex justify-between items-center mb-5">
         <div className="flex items-center space-x-3">
-          <div className={`p-2.5 rounded-full ${isDeparture ? 'bg-[#407FFF]/10 text-[#407FFF]' : 'bg-[#00CBA8]/10 text-[#00CBA8]'}`}>
+          <div className={`p-2.5 rounded-full ${isDeparture ? 'bg-[#527395]/10 text-[#527395]' : 'bg-[#9B5476]/10 text-[#9B5476]'}`}>
             {isDeparture ? <PlaneTakeoff size={20} /> : <PlaneLanding size={20} />}
           </div>
           <div>
@@ -267,7 +267,7 @@ const FlightCard = ({ flight }) => {
           <div className="w-full flex items-center">
             <div className="h-1.5 w-1.5 rounded-full bg-gray-300"></div>
             <div className="flex-1 h-[2px] bg-gray-200 border-t-2 border-dashed border-gray-300"></div>
-            <div className="h-1.5 w-1.5 rounded-full bg-[#00CBA8]"></div>
+            <div className="h-1.5 w-1.5 rounded-full bg-[#9B5476]"></div>
           </div>
         </div>
 
@@ -294,7 +294,7 @@ const HotelCard = ({ hotel }) => {
       <div className="p-5">
         <div className="flex justify-between items-start mb-2">
           <div>
-            <span className="text-[13px] font-bold text-[#00CBA8] bg-[#00CBA8]/10 px-2 py-1 rounded-full">숙소</span>
+            <span className="text-[13px] font-bold text-[#9B5476] bg-[#9B5476]/10 px-2 py-1 rounded-full">숙소</span>
             <h3 className="font-bold text-gray-900 mt-2.5 text-lg">{hotel.name}</h3>
           </div>
         </div>
@@ -393,7 +393,7 @@ const ItineraryView = ({ itinerary, setItinerary, massageSchedule }) => {
                 displayTitle = (
                   <div className="flex flex-col mt-0.5">
                     <span className="text-[15px] font-bold text-gray-900">{item.title}</span>
-                    <span className="text-[13px] font-bold text-[#FF88E4] mt-1.5 bg-[#FF88E4]/10 px-2 py-1 rounded-lg w-fit border border-[#FF88E4]/20">
+                    <span className="text-[13px] font-bold text-[#956587] mt-1.5 bg-[#956587]/10 px-2 py-1 rounded-lg w-fit border border-[#956587]/20">
                       민영: {minName || '미정'} / 다미: {damiName || '미정'}
                     </span>
                   </div>
@@ -423,7 +423,7 @@ const ItineraryView = ({ itinerary, setItinerary, massageSchedule }) => {
                     </div>
                   </div>
 
-                  <div className="schedule-card min-w-0 flex-1 bg-white border border-gray-100 shadow-sm rounded-2xl p-3 hover:border-[#00CBA8]/30 hover:shadow-md transition-all">
+                  <div className="schedule-card min-w-0 flex-1 bg-white border border-gray-100 shadow-sm rounded-2xl p-3 hover:border-[#9B5476]/30 hover:shadow-md transition-all">
                     <div className="flex justify-between items-start">
                       <div>
                         <span className={`text-[13px] font-bold px-1.5 py-0.5 rounded flex items-center w-max mb-1.5 ${lightBg} ${color}`}>
@@ -468,7 +468,7 @@ const ItineraryView = ({ itinerary, setItinerary, massageSchedule }) => {
         <div className="ml-[64px] pl-4 mt-6 mb-4">
           <button 
             onClick={() => setIsAddModalOpen(true)}
-            className="w-full border border-dashed border-gray-300 rounded-2xl py-3 flex items-center justify-center text-gray-400 hover:border-[#00CBA8] hover:text-[#00CBA8] hover:bg-[#00CBA8]/5 transition-all font-bold text-[15px]"
+            className="w-full border border-dashed border-gray-300 rounded-2xl py-3 flex items-center justify-center text-gray-400 hover:border-[#9B5476] hover:text-[#9B5476] hover:bg-[#9B5476]/5 transition-all font-bold text-[15px]"
           >
             + 이 시간에 일정 추가
           </button>
@@ -492,7 +492,7 @@ const ItineraryView = ({ itinerary, setItinerary, massageSchedule }) => {
                   type="time" 
                   value={newSchedule.time}
                   onChange={(e) => setNewSchedule({...newSchedule, time: e.target.value})}
-                  className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-[15px] font-bold text-gray-900 focus:outline-none focus:border-[#00CBA8] focus:ring-1 focus:ring-[#00CBA8] transition-all"
+                  className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-[15px] font-bold text-gray-900 focus:outline-none focus:border-[#9B5476] focus:ring-1 focus:ring-[#9B5476] transition-all"
                 />
               </div>
 
@@ -511,7 +511,7 @@ const ItineraryView = ({ itinerary, setItinerary, massageSchedule }) => {
                       onClick={() => setNewSchedule({...newSchedule, category: cat.id})}
                       className={`flex items-center px-3 py-1.5 rounded-full text-[13px] font-bold transition-all ${
                         newSchedule.category === cat.id 
-                        ? 'bg-[#00CBA8] text-white shadow-md shadow-[#00CBA8]/20' 
+                        ? 'bg-[#9B5476] text-white shadow-md shadow-[#9B5476]/20' 
                         : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-50'
                       }`}
                     >
@@ -529,7 +529,7 @@ const ItineraryView = ({ itinerary, setItinerary, massageSchedule }) => {
                   placeholder="예: 해산물 식당에서 저녁"
                   value={newSchedule.title}
                   onChange={(e) => setNewSchedule({...newSchedule, title: e.target.value})}
-                  className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-[15px] text-gray-900 focus:outline-none focus:border-[#00CBA8] focus:ring-1 focus:ring-[#00CBA8] transition-all"
+                  className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-[15px] text-gray-900 focus:outline-none focus:border-[#9B5476] focus:ring-1 focus:ring-[#9B5476] transition-all"
                 />
               </div>
 
@@ -540,7 +540,7 @@ const ItineraryView = ({ itinerary, setItinerary, massageSchedule }) => {
                   placeholder="예: 빈산 해산물"
                   value={newSchedule.location}
                   onChange={(e) => setNewSchedule({...newSchedule, location: e.target.value})}
-                  className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-[15px] text-gray-900 focus:outline-none focus:border-[#00CBA8] focus:ring-1 focus:ring-[#00CBA8] transition-all"
+                  className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-[15px] text-gray-900 focus:outline-none focus:border-[#9B5476] focus:ring-1 focus:ring-[#9B5476] transition-all"
                 />
               </div>
             </div>
@@ -634,14 +634,14 @@ const MassageView = ({ schedule, setSchedule }) => {
       <div className="spa-heading flex justify-between items-end mb-4">
         <div>
           <h2 className="text-xl font-bold text-gray-900 mb-1 flex items-center">
-            <Sparkles size={22} className="mr-2 text-[#00CBA8]" /> 
+            <Sparkles size={22} className="mr-2 text-[#9B5476]" /> 
             스파 계획 (1인 3회)
           </h2>
           <p className="text-[13px] text-gray-500 font-medium">2회 차감 프로그램 유의, 일자별 선택</p>
         </div>
         <button 
           onClick={openBrowseModal}
-          className="flex items-center text-[13px] font-bold text-[#407FFF] bg-[#407FFF]/10 px-3 py-1.5 rounded-full hover:bg-[#407FFF]/20 transition-colors shadow-sm"
+          className="flex items-center text-[13px] font-bold text-[#527395] bg-[#527395]/10 px-3 py-1.5 rounded-full hover:bg-[#527395]/20 transition-colors shadow-sm"
         >
           <BookOpen size={18} className="mr-1" /> 전체 메뉴 보기
         </button>
@@ -652,7 +652,7 @@ const MassageView = ({ schedule, setSchedule }) => {
           <div key={person} className="flex-1 bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
             <div className="flex justify-between items-center mb-2">
               <span className="text-[15px] font-bold text-gray-900">{person}</span>
-              <span className={`text-[15px] font-bold ${selectedCredits[person] >= maxCredits ? 'text-[#00CBA8]' : 'text-gray-400'}`}>
+              <span className={`text-[15px] font-bold ${selectedCredits[person] >= maxCredits ? 'text-[#9B5476]' : 'text-gray-400'}`}>
                 {selectedCredits[person]}/{maxCredits}회
               </span>
             </div>
@@ -660,7 +660,7 @@ const MassageView = ({ schedule, setSchedule }) => {
               {[...Array(maxCredits)].map((_, i) => (
                 <div 
                   key={i} 
-                  className={`flex-1 h-full transition-all duration-300 ${i < selectedCredits[person] ? 'bg-[#00CBA8]' : 'bg-transparent'}`}
+                  className={`flex-1 h-full transition-all duration-300 ${i < selectedCredits[person] ? 'bg-[#9B5476]' : 'bg-transparent'}`}
                 />
               ))}
             </div>
@@ -689,7 +689,7 @@ const MassageView = ({ schedule, setSchedule }) => {
                       onClick={() => (!selectedId && isMaxReached) ? null : openSelectModal(tripDay.originalIndex, person)}
                       className={`min-h-[96px] rounded-2xl p-2.5 flex flex-col justify-center relative transition-all ${
                         selectedMassage 
-                          ? 'bg-[#00CBA8]/5 border border-[#00CBA8]/30 cursor-pointer shadow-sm' 
+                          ? 'bg-[#9B5476]/5 border border-[#9B5476]/30 cursor-pointer shadow-sm' 
                           : isMaxReached
                             ? 'bg-gray-50 border border-gray-100 opacity-60 cursor-not-allowed'
                             : 'bg-white border border-dashed border-gray-300 cursor-pointer hover:bg-gray-50'
@@ -704,7 +704,7 @@ const MassageView = ({ schedule, setSchedule }) => {
                             {selectedMassage.time} {selectedMassage.pressure && `· ${selectedMassage.pressure}`}
                           </span>
                           {selectedMassage.cost === 2 && (
-                            <span className="absolute bottom-2 right-2 text-[13px] font-bold bg-[#FF88E4] text-white px-1.5 py-0.5 rounded shadow-sm">2회 차감</span>
+                            <span className="absolute bottom-2 right-2 text-[13px] font-bold bg-[#956587] text-white px-1.5 py-0.5 rounded shadow-sm">2회 차감</span>
                           )}
                           <button 
                             onClick={(e) => handleRemove(tripDay.originalIndex, person, e)}
@@ -715,7 +715,7 @@ const MassageView = ({ schedule, setSchedule }) => {
                         </>
                       ) : (
                         <div className="flex flex-col items-center justify-center text-gray-400 gap-1">
-                          <Sparkles size={14} className={isMaxReached ? 'text-gray-300' : 'text-[#00CBA8]/40'} />
+                          <Sparkles size={14} className={isMaxReached ? 'text-gray-300' : 'text-[#9B5476]/40'} />
                           <span className="text-[13px] font-medium">{isMaxReached ? '예약 완료' : '+ 스파 선택'}</span>
                         </div>
                       )}
@@ -740,7 +740,7 @@ const MassageView = ({ schedule, setSchedule }) => {
                 </h3>
                 {modalMode === 'select' && (
                   <p className="text-[13px] text-gray-500 font-medium mt-0.5">
-                    <span className="text-[#00CBA8] font-bold">{modalContext.person}</span>의 {spaDays.find(d=>d.originalIndex === modalContext.dayIndex)?.day} 스파를 선택해주세요
+                    <span className="text-[#9B5476] font-bold">{modalContext.person}</span>의 {spaDays.find(d=>d.originalIndex === modalContext.dayIndex)?.day} 스파를 선택해주세요
                   </p>
                 )}
               </div>
@@ -757,7 +757,7 @@ const MassageView = ({ schedule, setSchedule }) => {
                   onClick={() => setActiveCategory(cat.id)}
                   className={`px-4 py-2 rounded-full text-[13px] font-bold whitespace-nowrap transition-all duration-200 ${
                     activeCategory === cat.id 
-                      ? 'bg-[#00CBA8] text-white shadow-md shadow-[#00CBA8]/20' 
+                      ? 'bg-[#9B5476] text-white shadow-md shadow-[#9B5476]/20' 
                       : 'bg-white text-gray-500 border border-gray-200 hover:bg-gray-50'
                   }`}
                 >
@@ -768,9 +768,9 @@ const MassageView = ({ schedule, setSchedule }) => {
 
             <div className="min-h-0 flex-1 overflow-y-auto bg-gray-50 p-4 space-y-3 pb-safe-area">
               <div className="bg-white rounded-xl p-3.5 flex items-start space-x-2.5 mb-4 border border-gray-100 shadow-sm">
-                <Info size={14} className="text-[#00CBA8] flex-shrink-0 mt-0.5" />
+                <Info size={14} className="text-[#9B5476] flex-shrink-0 mt-0.5" />
                 <p className="text-[13px] text-gray-600 leading-snug">
-                  1회 예약 시 1회권이 차감되며, <b className="text-[#FF88E4]">[2회 차감]</b> 프로그램은 2회권이 차감됩니다. 잔여 횟수를 고려해 선택해주세요.
+                  1회 예약 시 1회권이 차감되며, <b className="text-[#956587]">[2회 차감]</b> 프로그램은 2회권이 차감됩니다. 잔여 횟수를 고려해 선택해주세요.
                 </p>
               </div>
 
@@ -793,11 +793,11 @@ const MassageView = ({ schedule, setSchedule }) => {
                     onClick={() => !isDisabled && modalMode === 'select' ? handleSelect(item.id) : null}
                     className={`bg-white rounded-2xl p-4 border transition-all ${
                       isCurrentlySelectedInThisSlot
-                        ? 'border-[#00CBA8] shadow-md ring-1 ring-[#00CBA8] bg-[#00CBA8]/5'
+                        ? 'border-[#9B5476] shadow-md ring-1 ring-[#9B5476] bg-[#9B5476]/5'
                         : isDisabled && modalMode === 'select'
                           ? 'border-gray-100 opacity-60'
                           : modalMode === 'select' 
-                            ? 'border-gray-200 shadow-sm hover:border-[#00CBA8]/50 cursor-pointer'
+                            ? 'border-gray-200 shadow-sm hover:border-[#9B5476]/50 cursor-pointer'
                             : 'border-gray-100 shadow-sm'
                     }`}
                   >
@@ -805,13 +805,13 @@ const MassageView = ({ schedule, setSchedule }) => {
                       <h4 className="font-bold text-gray-900 text-[15px] flex items-center">
                         {item.name}
                         {item.recommendReason && (
-                          <span className="ml-2 bg-[#FFEC6B]/40 text-gray-800 text-[13px] px-2 py-0.5 rounded-full font-bold flex items-center">
+                          <span className="ml-2 bg-[#F4EAC9]/40 text-gray-800 text-[13px] px-2 py-0.5 rounded-full font-bold flex items-center">
                             <ThumbsUp size={10} className="mr-1" /> 추천
                           </span>
                         )}
                       </h4>
                       {item.cost === 2 && (
-                        <span className="text-[13px] font-bold bg-[#FF88E4]/10 text-[#FF88E4] px-2 py-0.5 rounded-full shrink-0 ml-2">2회 차감</span>
+                        <span className="text-[13px] font-bold bg-[#956587]/10 text-[#956587] px-2 py-0.5 rounded-full shrink-0 ml-2">2회 차감</span>
                       )}
                     </div>
                     
@@ -820,7 +820,7 @@ const MassageView = ({ schedule, setSchedule }) => {
                         ⏱ {item.time}
                       </span>
                       {item.pressure && (
-                        <span className="text-[13px] font-semibold px-2 py-0.5 rounded-full bg-[#407FFF]/10 text-[#407FFF]">
+                        <span className="text-[13px] font-semibold px-2 py-0.5 rounded-full bg-[#527395]/10 text-[#527395]">
                           💪 압력: {item.pressure}
                         </span>
                       )}
@@ -831,7 +831,7 @@ const MassageView = ({ schedule, setSchedule }) => {
                     {item.recommendReason && (
                       <div className="bg-gray-50 border border-gray-100 rounded-xl p-3 mb-3">
                         <div className="flex items-center text-gray-900 font-bold text-[13px] mb-1.5">
-                          <span className="bg-[#FFEC6B] text-gray-900 rounded px-1.5 py-0.5 text-[13px] mr-1.5 leading-tight shadow-sm">추천 사유</span>
+                          <span className="bg-[#F4EAC9] text-gray-900 rounded px-1.5 py-0.5 text-[13px] mr-1.5 leading-tight shadow-sm">추천 사유</span>
                         </div>
                         <p className="text-[13px] text-gray-600 font-medium leading-snug">{item.recommendReason}</p>
                       </div>
@@ -842,7 +842,7 @@ const MassageView = ({ schedule, setSchedule }) => {
                         disabled={isDisabled}
                         className={`w-full py-3 rounded-xl text-[15px] font-bold transition-colors mt-2 ${
                           isCurrentlySelectedInThisSlot
-                            ? 'bg-[#00CBA8] text-white'
+                            ? 'bg-[#9B5476] text-white'
                             : isDisabled 
                               ? 'bg-gray-100 text-gray-400' 
                               : 'bg-gray-900 text-white hover:bg-black'
@@ -868,6 +868,13 @@ function useSavedState(key, initial) {
   useEffect(() => { try { localStorage.setItem(key, JSON.stringify(value)); } catch {} }, [key, value]);
   return [value, setValue];
 }
+function Ribbon({ className = '' }) {
+  return <span className={`ribbon ${className}`} aria-hidden="true">
+    <span className="ribbon-tail left"/><span className="ribbon-tail right"/>
+    <span className="ribbon-loop left"/><span className="ribbon-loop right"/>
+    <span className="ribbon-knot"/>
+  </span>;
+}
 export default function App() {
   const [activeTab, setActiveTab] = useState('home');
   const [massageSchedule, setMassageSchedule] = useSavedState('ntr-spa-v1', {});
@@ -875,13 +882,13 @@ export default function App() {
   const tabs = [{id:'home', title:'여행 한눈에', icon:Home}, {id:'itinerary', title:'여행 일정', icon:CalendarDays}, {id:'massage', title:'스파 플래너', icon:Sparkles}];
   const navigation = tabs.map(({id,title,icon:Icon}) => <button key={id} aria-current={activeTab === id ? 'page' : undefined} onClick={() => { setActiveTab(id); window.scrollTo({ top: 0, behavior: 'instant' }); }} className={'nav-button ' + (activeTab === id ? 'selected' : '')}><Icon size={20}/><span>{title}</span>{activeTab === id && <ChevronRight size={16} className="nav-arrow"/>}</button>);
   return <div className="app-shell">
-    <aside className="sidebar"><a href="#" className="brand" onClick={() => setActiveTab('home')}><span className="brand-icon"><Navigation size={22}/></span> somewhere<span className="brand-dot">.</span></a><p className="sidebar-label">여행 메뉴</p><nav aria-label="주 메뉴">{navigation}</nav><div className="sidebar-note"><Luggage size={26}/><h3>휴식 · 호캉스</h3><p>민영 · 다미 / 나트랑<br/>2027년 3월 4일 — 9일</p><span>VIETNAM · 2027</span></div><div className="sidebar-footer">2027.03.04 — 03.09</div></aside>
+    <aside className="sidebar"><a href="#" className="brand" onClick={() => setActiveTab('home')}><span className="brand-icon"><Ribbon/></span> somewhere<span className="brand-dot">.</span></a><p className="sidebar-label">여행 메뉴</p><nav aria-label="주 메뉴">{navigation}</nav><div className="sidebar-note"><Ribbon/><h3>휴식 · 호캉스</h3><p>민영 · 다미 / 나트랑<br/>2027년 3월 4일 — 9일</p><span>VIETNAM · 2027</span></div><div className="sidebar-footer">2027.03.04 — 03.09</div></aside>
     <main className="workspace"><header className="topbar"><span>나의 여행 <ChevronRight size={14}/> <strong>나트랑</strong></span><div className="travelers"><span className="avatar">민</span><span className="avatar second">다</span><span>민영 · 다미</span></div></header>
-      <section className="page-intro"><div><h1>{activeTab === 'home' ? '나트랑 여행 계획' : activeTab === 'itinerary' ? '여행 일정' : '스파 계획'}</h1></div><span className="trip-badge"><CalendarDays size={16}/> 2027.03.04 — 03.09</span></section>
+      <section className="page-intro"><div className="page-title"><Ribbon/><h1>{activeTab === 'home' ? '나트랑 여행 계획' : activeTab === 'itinerary' ? '여행 일정' : '스파 계획'}</h1></div><span className="trip-badge"><CalendarDays size={16}/> 2027.03.04 — 03.09</span></section>
       {activeTab === 'home' ? <>
-        <section className="hero"><div className="hero-shade"/><div className="hero-content"><span className="hero-label"><MapPin size={14}/> VIETNAM, NHA TRANG</span><h2>나트랑 · 5박 6일</h2><p>휴식 · 호캉스</p><button onClick={() => setActiveTab('itinerary')}>일정 보기 <ChevronRight size={17}/></button></div></section>
+        <section className="hero"><Ribbon className="hero-ribbon"/><div className="hero-shade"/><div className="hero-content"><span className="hero-label"><MapPin size={14}/> VIETNAM, NHA TRANG</span><h2>나트랑 · 5박 6일</h2><p>휴식 · 호캉스</p><button onClick={() => setActiveTab('itinerary')}>일정 보기 <ChevronRight size={17}/></button></div></section>
         <section className="trip-stats"><div><CalendarDays/><span>여행 기간<strong>5박 6일</strong></span></div><div><Luggage/><span>여행자<strong>민영 · 다미</strong></span></div><div><Building2/><span>숙소<strong>호텔 & 풀빌라</strong></span></div><div><Sparkles/><span>이번 여행의 테마<strong>휴식 · 호캉스</strong></span></div></section>
-        <div className="overview-grid"><section><div className="section-heading"><div><span className="eyebrow">FLIGHTS</span><h2>항공편</h2></div><PlaneTakeoff size={22}/></div>{tripData.flights.map((flight,index) => <FlightCard key={index} flight={flight}/>)}<div className="travel-note"><Info size={17}/><span>항공편의 출발·도착 시간은 각 공항 현지 시간 기준입니다.</span></div></section><section><div className="section-heading"><div><span className="eyebrow">HOTELS</span><h2>우리의 쉼이 숙소</h2></div><Building2 size={22}/></div>{tripData.hotels.map((hotel,index) => <HotelCard key={index} hotel={hotel}/>)}</section></div>
+        <div className="overview-grid"><section><div className="section-heading"><div><span className="eyebrow">FLIGHTS</span><h2>항공편</h2></div><PlaneTakeoff size={22}/></div>{tripData.flights.map((flight,index) => <FlightCard key={index} flight={flight}/>)}<div className="travel-note"><Info size={17}/><span>항공편의 출발·도착 시간은 각 공항 현지 시간 기준입니다.</span></div></section><section><div className="section-heading"><div><span className="eyebrow">HOTELS</span><h2>숙소</h2></div><Building2 size={22}/></div>{tripData.hotels.map((hotel,index) => <HotelCard key={index} hotel={hotel}/>)}</section></div>
         <section className="spa-banner"><div className="spa-banner-icon"><Sparkles size={28}/></div><div><span className="eyebrow">SPA</span><h3>리조트 스파</h3><p>날짜별 프로그램과 이용 횟수를 확인하세요.</p></div><button onClick={() => setActiveTab('massage')}>스파 계획하기 <ChevronRight size={16}/></button></section>
       </> : <section className="detail-panel">{activeTab === 'itinerary' ? <ItineraryView itinerary={itinerary} setItinerary={setItinerary} massageSchedule={massageSchedule}/> : <MassageView schedule={massageSchedule} setSchedule={setMassageSchedule}/>}</section>}
       <footer className="page-footer"><span>나트랑 여행 계획</span><span>2027.03.04 — 03.09</span></footer>
