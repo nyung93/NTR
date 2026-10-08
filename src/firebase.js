@@ -1,25 +1,19 @@
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-import { getFirestore } from "firebase/firestore";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
+import { initializeApp } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
 
-// Public Firebase web app identifiers, not server credentials.
-// Never put service account private keys or client secrets in this client module.
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+// Firebase web configuration identifies the client project; never put service
+// account credentials or other server secrets in this client-side file.
 const firebaseConfig = {
-  apiKey: "AIzaSyAPSpj79Va-U_18tHbeoVN4Uy9_KY-omiI",
-  authDomain: "trip-plan-13743.firebaseapp.com",
-  projectId: "trip-plan-13743",
-  storageBucket: "trip-plan-13743.firebasestorage.app",
-  messagingSenderId: "441166486884",
-  appId: "1:441166486884:web:b2c79ba5a2038ee46f6e71",
-  measurementId: "G-EVYHPJJDMV"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyAPSpj79Va-U_18tHbeoVN4Uy9_KY-omiI',
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'trip-plan-13743.firebaseapp.com',
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'trip-plan-13743',
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'trip-plan-13743.firebasestorage.app',
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '441166486884',
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || '1:441166486884:web:b2c79ba5a2038ee46f6e71',
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || 'G-EVYHPJJDMV',
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-// Firestore 데이터베이스 내보내기 (다른 파일에서 쓸 수 있게 함)
+export const auth = getAuth(app);
 export const db = getFirestore(app);

@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+.cloud-sync-status{margin:2px 0 12px;text-align:right;color:#777987;font-size:12px}
+.cloud-sync-status.error{color:#a34d54}
+
 @font-face {
   font-family: "Pretendard";
   src: url("/fonts/PretendardVariable.woff2") format("woff2");
@@ -184,3 +187,5 @@ body { font-size: 16px; line-height: 1.6; }
   .travelers > span:last-child { font-size: 13px; }
   .page-footer { font-size: 13px; }
 }
+ .cloud-sync-status{margin:2px 0 12px;text-align:right;color:#777987;font-size:12px}
+ .cloud-sync-status.error{color:#a34d54}

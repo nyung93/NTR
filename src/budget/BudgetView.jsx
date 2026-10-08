@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Wallet, Plus, X, ArrowRight, Copy, Pencil, Trash2, Download } from 'lucide-react';
 import { CATEGORIES, CURRENCIES, won, money, amount, initialLedger, cashRemaining, normalizeExpense, normalizeExchange, normalizeTransfer, summarize } from './model';
 import './budget.css';
+import { useSyncedState } from '../useSyncedState';
 
 const today = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
 const methods = { card: '카드', cash: '현금', bank: '계좌이체' };
@@ -78,21 +79,21 @@ function SettingsEditor({ ledger, save, close }) {
   </form></Dialog>;
 }
 
-export default function BudgetView({ trip }) {
+export default function BudgetView({ trip, uid }) {
   const storageKey = `trip-${trip.id}-budget-v1`;
-  const [load] = useState(() => { try { const saved = localStorage.getItem(storageKey); const data = saved ? JSON.parse(saved) : initialLedger(trip.id === 'nha-trang'); if (!data.people?.length || !Array.isArray(data.expenses) || !Array.isArray(data.exchanges) || !Array.isArray(data.transfers)) throw Error(); summarize(data); return { data }; } catch { return { data: initialLedger(trip.id === 'nha-trang'), error: '저장된 예산을 읽을 수 없습니다. 기존 데이터를 보호하기 위해 저장을 중단했습니다.' }; } });
-  const [ledger, setLedger] = useState(load.data);
-  const [error, setError] = useState(load.error || '');
+  const [ledger, setLedger, syncStatus, syncError] = useSyncedState(storageKey, initialLedger(trip.id === 'nha-trang'), uid, `${trip.id}-budget`);
+  const [error, setError] = useState('');
   const [section, setSection] = useState('expenses');
   const [filter, setFilter] = useState('all');
   const [category, setCategory] = useState('all');
   const [modal, setModal] = useState(null);
   const [notice, setNotice] = useState('');
+  if (syncStatus === 'loading') return <div className="budget-view"><p className="budget-local-note">예산 데이터를 Firebase에서 불러오는 중…</p></div>;
   const summary = summarize(ledger);
   const name = id => ledger.people.find(p => p.id === id)?.name || '참여자';
   const commit = next => {
-    if (load.error) return false;
-    try { localStorage.setItem(storageKey, JSON.stringify(next)); setLedger(next); setError(''); return true; } catch { setError('브라우저 저장 공간이 부족하거나 저장이 차단되었습니다. 이번 변경은 저장되지 않았습니다.'); return false; }
+    if (syncError) { setError(syncError); return false; }
+    setLedger(next); setError(''); return true;
   };
   const upsert = (kind, item) => commit({ ...ledger, [kind]: ledger[kind].some(x => x.id === item.id) ? ledger[kind].map(x => x.id === item.id ? item : x) : [...ledger[kind], item] });
   const close = () => setModal(null);
@@ -109,7 +110,7 @@ export default function BudgetView({ trip }) {
   const visible = ledger.expenses.filter(e => (filter === 'all' || e.status === filter) && (category === 'all' || e.category === category)).sort((a, b) => b.date.localeCompare(a.date));
   return <div className="budget-view">
     <div className="budget-toolbar"><div><h2><Wallet size={22}/> 예산·정산</h2><p>여행별 지출, 환전, 정산을 한곳에서 관리합니다.</p></div><button className="budget-secondary" onClick={() => setModal({ type: 'settings' })}>예산·참여자 설정</button></div>
-    <p className="budget-local-note">이 브라우저에 저장됩니다. 다른 기기와 자동 동기화되지 않습니다.</p>
+    <p className="budget-local-note">{syncError || (syncStatus === 'synced' ? 'Firebase 계정에 저장되어 다른 기기에서도 확인할 수 있습니다.' : 'Firebase에 연결 중…')}</p>
     {error && <p role="alert" className="budget-error">{error}</p>}{notice && <p role="status" className="budget-notice">{notice}<button aria-label="알림 닫기" onClick={() => setNotice('')}><X size={16}/></button></p>}
     <div className="budget-summary">{[['전체 예산', ledger.budget ? won(ledger.budget) : '미설정'], ['실제 지출', won(summary.paid)], ['앞으로 쓸 금액', won(summary.planned)], ['예정 포함 남은 예산', ledger.budget ? won(summary.remaining) : '예산을 설정하세요']].map(([label, value]) => <div key={label}><span>{label}</span><strong>{value}</strong></div>)}</div>
     {ledger.budget > 0 && summary.remaining < 0 && <p className="budget-error">예정 금액까지 포함하면 예산을 {won(-summary.remaining)} 초과합니다.</p>}
