@@ -30,12 +30,14 @@ service cloud.firestore {
       // ownerUid == uid, or memberUids array-contains uid.
       allow list: if signedIn() && request.auth.uid == resource.data.ownerUid;
       allow list: if signedIn() && request.auth.uid in resource.data.memberUids;
-      allow update: if isTripOwner(tripId)
+      allow update: if signedIn()
+        && request.auth.uid == resource.data.ownerUid
         && request.resource.data.ownerUid == resource.data.ownerUid
+        && request.resource.data.memberUids is list
         && request.resource.data.memberUids.size() <= 20
         && request.resource.data.ownerUid in request.resource.data.memberUids
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'start', 'end', 'purpose', 'participants', 'memberUids', 'updatedAt']);
-      allow delete: if isTripOwner(tripId);
+      allow delete: if signedIn() && request.auth.uid == resource.data.ownerUid;
 
       match /planner/{sectionId} {
         allow read: if isTripMember(tripId)
