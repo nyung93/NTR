@@ -36,7 +36,6 @@ export function TripSettingsDialog({ trip, onClose, onSave, onDelete, busy }) {
     event.preventDefault();
     const names = draft.participants.map(person => person.name.trim());
     if (!draft.name.trim() || !draft.start || !draft.end || Date.parse(draft.end) < Date.parse(draft.start)) return setError('여행지 이름과 여행 기간을 확인해 주세요.');
-    if (!draft.purpose.trim()) return setError('여행 목적을 입력해 주세요.');
     if (!names.length || names.some(name => !name) || new Set(names).size !== names.length) return setError('여행자 이름을 빈칸이나 중복 없이 입력하세요.');
     if (!draft.memberUids.includes(trip.ownerUid)) return setError('여행 소유자 UID는 공유 목록에서 제외할 수 없습니다.');
     if (draft.memberUids.length > 20) return setError('여행 하나에 최대 20개 계정을 등록할 수 있습니다.');
