@@ -2,11 +2,8 @@ import BudgetView from './budget/BudgetView';
 import { useSyncedState } from './useSyncedState';
 import { useTripDocument } from './useTripDocument';
 import { useAccountTrips, createTrip } from './useAccountTrips';
-import ShareTripDialog from './ShareTripDialog';
-import { updateDoc, doc, serverTimestamp } from 'firebase/firestore';
-import { httpsCallable } from 'firebase/functions';
-import { db, functions } from './firebase';
-import AdminView from './AdminView';
+import { collection, deleteDoc, doc, getDocs, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { db } from './firebase';
 import { initialLedger } from './budget/model';
 import React, { useState, useEffect, useRef } from 'react';
 import { 
@@ -37,7 +34,6 @@ import {
   Navigation,
   Pencil,
   Trash2,
-  Share2,
   Users,
 } from 'lucide-react';
 
@@ -895,14 +891,13 @@ const MassageView = ({ schedule, setSchedule }) => {
 };
 
 
-function TripWorkspace({ trip, trips, selectTrip, openAddTrip, uid, user, isAdmin, onTripDelete }) {
+function TripWorkspace({ trip, trips, selectTrip, openAddTrip, uid, onTripDelete }) {
   const [activeTab, setActiveTab] = useState('home');
   const isNhaTrang = trip.legacyId === 'nha-trang' || trip.name === '나트랑';
   const [massageSchedule, setMassageSchedule, spaSync, spaError] = useTripDocument({ uid, tripId: trip.id, section: 'spa', initialValue: {}, legacyId: trip.legacyId, legacyKeys: [isNhaTrang ? 'ntr-spa-v1' : `trip-${trip.legacyId || trip.id}-spa-v1`] });
   const [itinerary, setItinerary, itinerarySync, itineraryError] = useTripDocument({ uid, tripId: trip.id, section: 'itinerary', initialValue: isNhaTrang ? initialItinerary : {}, legacyId: trip.legacyId, legacyKeys: [isNhaTrang ? 'ntr-itinerary-v2' : `trip-${trip.legacyId || trip.id}-itinerary-v1`] });
   const [overview, setOverview, overviewSync, overviewError] = useTripDocument({ uid, tripId: trip.id, section: 'overview', initialValue: isNhaTrang ? { flights: tripData.flights.map((item, index) => ({ ...item, id: item.id || `flight-${index}` })), hotels: tripData.hotels.map((item, index) => ({ ...item, id: item.id || `hotel-${index}` })) } : { flights: [], hotels: [] }, legacyId: trip.legacyId });
   const [ledger, setLedger, budgetSync, budgetError] = useTripDocument({ uid, tripId: trip.id, section: 'budget', initialValue: initialLedger(isNhaTrang), legacyId: trip.legacyId, legacyKeys: [`trip-${trip.legacyId || trip.id}-budget-v1`] });
-  const [sharing, setSharing] = useState(false);
   const [editingTrip, setEditingTrip] = useState(false);
   const [editingOverview, setEditingOverview] = useState(null);
   const days = isNhaTrang ? defaultTripDays : makeTripDays(trip.start, trip.end);
@@ -912,33 +907,37 @@ function TripWorkspace({ trip, trips, selectTrip, openAddTrip, uid, user, isAdmi
     const syncProblem = itineraryError || spaError || overviewError || budgetError;
     return <main className="auth-screen"><section className="auth-card"><h1>{syncProblem ? '여행 데이터 동기화 오류' : '여행 데이터 불러오는 중…'}</h1><p>{syncProblem || '잠시만 기다려 주세요.'}</p></section></main>;
   }
-  const isOwner = trip.ownerUid === uid;
-  const tripPicker = <div className="trip-picker"><label>여행지 선택<select value={trip.id} onChange={e => selectTrip(e.target.value)}>{trips.map(t => <option key={t.id} value={t.id}>{t.name}{t.ownerUid === uid ? ' · 내 여행' : ' · 공유됨'}</option>)}</select></label><button type="button" onClick={openAddTrip}>+ 여행 추가</button></div>;
+  const tripPicker = <div className="trip-picker"><label>여행지 선택<select value={trip.id} onChange={e => selectTrip(e.target.value)}>{trips.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}</select></label><button type="button" onClick={openAddTrip}>+ 여행 추가</button></div>;
   const tabs = [{id:'home', title:'여행 한눈에', icon:Home}, {id:'itinerary', title:'여행 일정', icon:CalendarDays}, {id:'budget', title:'예산·정산', icon:Wallet}, ...(isNhaTrang ? [{id:'massage', title:'스파 플래너', icon:Sparkles}] : [])];
   const navigation = tabs.map(({id,title,icon:Icon}) => <button key={id} aria-current={activeTab === id ? 'page' : undefined} onClick={() => { setActiveTab(id); window.scrollTo({ top: 0, behavior: 'instant' }); }} className={'nav-button ' + (activeTab === id ? 'selected' : '')}><Icon size={20}/><span>{title}</span>{activeTab === id && <ChevronRight size={16} className="nav-arrow"/>}</button>);
   const updateOverviewItem = (kind, item) => setOverview(previous => ({ ...previous, [kind]: (previous[kind] || []).some(row => row.id === item.id) ? previous[kind].map(row => row.id === item.id ? item : row) : [...(previous[kind] || []), item] }));
   const removeOverviewItem = (kind, item) => { if (window.confirm(`“${item.airline || item.name}” 정보를 삭제할까요?`)) setOverview(previous => ({ ...previous, [kind]: previous[kind].filter(row => row.id !== item.id) })); };
   const saveTrip = async fields => updateDoc(doc(db, 'trips', trip.id), { ...fields, updatedAt: serverTimestamp() });
   const deleteTrip = async () => {
-    if (!window.confirm(`${trip.name} 여행과 저장된 일정·예산을 삭제할까요? 이 작업은 되돌릴 수 없습니다.`)) return;
-    try { await httpsCallable(functions, 'deleteTrip')({ tripId: trip.id }); await onTripDelete(trip.id); }
-    catch { window.alert('여행 삭제에 실패했습니다. Firebase Functions가 배포됐는지 확인해 주세요.'); }
+    if (!window.confirm(trip.name + ' 여행과 저장된 일정·예산을 삭제할까요? 이 작업은 되돌릴 수 없습니다.')) return;
+    try {
+      const sections = await getDocs(collection(db, 'trips', trip.id, 'planner'));
+      await Promise.all(sections.docs.map(section => deleteDoc(section.ref)));
+      await deleteDoc(doc(db, 'trips', trip.id));
+      await onTripDelete(trip.id);
+    } catch {
+      window.alert('여행을 삭제하지 못했습니다. 연결 상태와 Firestore 규칙을 확인한 뒤 다시 시도해 주세요.');
+    }
   };
   const commonOverview = <>
     {isNhaTrang ? <section className="hero"><div className="hero-shade"/><div className="hero-content"><span className="hero-label"><MapPin size={14}/> VIETNAM, NHA TRANG</span><h2>{trip.name} · {duration}</h2><p>휴식 · 호캉스</p><button onClick={() => setActiveTab('itinerary')}>일정 보기 <ChevronRight size={17}/></button></div></section> : <section className="new-trip-overview"><MapPin size={32}/><h2>{trip.name}</h2><p>{dateLabel} · {duration}</p><button className="primary-action" onClick={() => setActiveTab('itinerary')}>일정 보기 <ChevronRight size={17}/></button></section>}
-    <section className="trip-stats"><div><CalendarDays/><span>여행 기간<strong>{duration}</strong></span></div><div><Luggage/><span>여행 인원<strong>{ledger.people.length}명 · {ledger.people.map(person => person.name).join(', ')}</strong></span></div><div><Building2/><span>숙소<strong>{overview.hotels.length ? overview.hotels.map(hotel => hotel.name).join(' · ') : '숙소를 추가하세요'}</strong></span></div><div><Users/><span>플래너 접근 계정<strong>{trip.memberUids?.length || 1}개 계정</strong></span></div></section>
+    <section className="trip-stats"><div><CalendarDays/><span>여행 기간<strong>{duration}</strong></span></div><div><Luggage/><span>여행 인원<strong>{ledger.people.length}명 · {ledger.people.map(person => person.name).join(', ')}</strong></span></div><div><Building2/><span>숙소<strong>{overview.hotels.length ? overview.hotels.map(hotel => hotel.name).join(' · ') : '숙소를 추가하세요'}</strong></span></div><div><Users/><span>저장 범위<strong>내 계정 전용</strong></span></div></section>
     <div className="overview-grid"><section><div className="section-heading"><div><span className="eyebrow">FLIGHTS</span><h2>항공편</h2></div><PlaneTakeoff size={22}/></div>{overview.flights.map(flight => <FlightCard key={flight.id} flight={flight} onEdit={() => setEditingOverview({ kind: 'flight', item: flight })} onDelete={() => removeOverviewItem('flights', flight)}/>)}{!overview.flights.length && <p className="overview-empty">항공 정보를 추가해 주세요.</p>}<button className="overview-add-button" onClick={() => setEditingOverview({ kind: 'flight' })}>+ 항공편 추가</button><div className="travel-note"><Info size={17}/><span>출발·도착 시각은 각 공항 현지 시간 기준입니다.</span></div></section><section><div className="section-heading"><div><span className="eyebrow">STAYS</span><h2>숙소</h2></div><Building2 size={22}/></div>{overview.hotels.map(hotel => <HotelCard key={hotel.id} hotel={hotel} onEdit={() => setEditingOverview({ kind: 'hotel', item: hotel })} onDelete={() => removeOverviewItem('hotels', hotel)}/>)}{!overview.hotels.length && <p className="overview-empty">숙소 정보를 추가해 주세요.</p>}<button className="overview-add-button" onClick={() => setEditingOverview({ kind: 'hotel' })}>+ 숙소 추가</button></section></div>
     {isNhaTrang && <section className="spa-banner"><div className="spa-banner-icon"><Sparkles size={28}/></div><div><span className="eyebrow">SPA</span><h3>리조트 스파</h3><p>날짜별 프로그램과 이용 횟수를 확인하세요.</p></div><button onClick={() => setActiveTab('massage')}>스파 계획하기 <ChevronRight size={16}/></button></section>}
   </>;
   return <div className="app-shell">
-    <aside className="sidebar"><a href="#" className="brand" onClick={() => setActiveTab('home')}><span className="brand-icon"><Navigation size={22}/></span> somewhere<span className="brand-dot">.</span></a>{tripPicker}<p className="sidebar-label">여행 메뉴</p><nav aria-label="주 메뉴">{navigation}{isAdmin && <button className={'nav-button ' + (activeTab === 'admin' ? 'selected' : '')} onClick={() => setActiveTab('admin')}><Users size={20}/><span>관리자</span></button>}</nav></aside>
-    <main className="workspace"><header className="topbar"><span>나의 여행 <ChevronRight size={14}/> <strong>{trip.name}</strong></span><div className="trip-top-actions">{isAdmin && <button onClick={() => setActiveTab('admin')}>관리자</button>}<button onClick={() => setEditingTrip(true)}>여행 정보</button>{isOwner && <button onClick={() => setSharing(true)}><Share2 size={16}/> 공유</button>}</div></header><div className="mobile-trip-picker">{tripPicker}</div>
-      {(itineraryError || spaError || overviewError || budgetError) ? <p className="cloud-sync-status error" role="alert">{itineraryError || spaError || overviewError || budgetError}</p> : <p className="cloud-sync-status">Firebase에 저장됨 · {trip.memberUids?.length || 1}명과 공유</p>}
-      <section className="page-intro"><div className="page-title"><h1>{activeTab === 'home' ? `${trip.name} 여행 계획` : activeTab === 'itinerary' ? '여행 일정' : activeTab === 'budget' ? '예산·정산' : activeTab === 'admin' ? '관리자' : '스파 계획'}</h1></div><span className="trip-badge"><CalendarDays size={16}/> {dateLabel}</span></section>
-      {activeTab === 'home' ? commonOverview : activeTab === 'admin' && isAdmin ? <AdminView uid={uid} onBack={() => setActiveTab('home')}/> : <section className="detail-panel">{activeTab === 'itinerary' ? <ItineraryView days={days} itinerary={itinerary} setItinerary={setItinerary} massageSchedule={massageSchedule}/> : activeTab === 'budget' ? <BudgetView trip={trip} ledger={ledger} setLedger={setLedger} syncStatus={budgetSync} syncError={budgetError}/> : <MassageView schedule={massageSchedule} setSchedule={setMassageSchedule}/>}</section>}
+    <aside className="sidebar"><a href="#" className="brand" onClick={() => setActiveTab('home')}><span className="brand-icon"><Navigation size={22}/></span> somewhere<span className="brand-dot">.</span></a>{tripPicker}<p className="sidebar-label">여행 메뉴</p><nav aria-label="주 메뉴">{navigation}</nav></aside>
+    <main className="workspace"><header className="topbar"><span>나의 여행 <ChevronRight size={14}/> <strong>{trip.name}</strong></span><div className="trip-top-actions"><button onClick={() => setEditingTrip(true)}>여행 정보</button></div></header><div className="mobile-trip-picker">{tripPicker}</div>
+      {(itineraryError || spaError || overviewError || budgetError) ? <p className="cloud-sync-status error" role="alert">{itineraryError || spaError || overviewError || budgetError}</p> : <p className="cloud-sync-status">Firebase에 저장됨 · 내 계정에서만 확인 가능</p>}
+      <section className="page-intro"><div className="page-title"><h1>{activeTab === 'home' ? `${trip.name} 여행 계획` : activeTab === 'itinerary' ? '여행 일정' : activeTab === 'budget' ? '예산·정산' : '스파 계획'}</h1></div><span className="trip-badge"><CalendarDays size={16}/> {dateLabel}</span></section>
+      {activeTab === 'home' ? commonOverview : <section className="detail-panel">{activeTab === 'itinerary' ? <ItineraryView days={days} itinerary={itinerary} setItinerary={setItinerary} massageSchedule={massageSchedule}/> : activeTab === 'budget' ? <BudgetView trip={trip} ledger={ledger} setLedger={setLedger} syncStatus={budgetSync} syncError={budgetError}/> : <MassageView schedule={massageSchedule} setSchedule={setMassageSchedule}/>}</section>}
       <footer className="page-footer"><span>{trip.name} 여행 계획</span><span>{dateLabel}</span></footer>
-    </main><nav className="mobile-nav" style={{gridTemplateColumns: `repeat(${tabs.length + (isAdmin ? 1 : 0)}, minmax(0, 1fr))`}} aria-label="모바일 메뉴">{navigation}{isAdmin && <button className={'nav-button ' + (activeTab === 'admin' ? 'selected' : '')} onClick={() => setActiveTab('admin')}><Users size={20}/><span>관리자</span></button>}</nav>
-    {sharing && <ShareTripDialog trip={trip} uid={uid} close={() => setSharing(false)}/>}
+    </main><nav className="mobile-nav" style={{gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))`}} aria-label="모바일 메뉴">{navigation}</nav>
     {editingTrip && <TripSettingsDialog trip={{...trip,currentUid:uid}} onClose={() => setEditingTrip(false)} busy={false} onSave={saveTrip} onDelete={deleteTrip}/>}
     {editingOverview && <DashboardItemEditor type={editingOverview.kind} item={editingOverview.item} onClose={() => setEditingOverview(null)} onSave={item => updateOverviewItem(editingOverview.kind === 'flight' ? 'flights' : 'hotels', item)}/>}
   </div>;
@@ -972,32 +971,19 @@ function AddTripDialog({ onClose, onAdd }) {
       <label>여행지<input autoFocus required maxLength={40} placeholder="예: 도쿄" value={name} onChange={e => setName(e.target.value)}/></label>
       <label>출발일<input required type="date" value={start} onChange={e => setStart(e.target.value)}/></label>
       <label>마지막 날<input required type="date" min={start} value={end} onChange={e => setEnd(e.target.value)}/></label>
-      <p className="trip-storage-note">이 여행은 내 계정에 저장되며, 나중에 다른 계정과 공유할 수 있습니다.</p>
+      <p className="trip-storage-note">여행은 내 계정에 비공개로 저장됩니다.</p>
       {error && <p role="alert" className="form-error">{error}</p>}
       <div className="add-trip-actions"><button type="button" onClick={onClose}>취소</button><button className="primary-action" type="submit">여행 만들기</button></div>
     </form>
   </dialog>;
 }
 
-export default function App({ user, uid = user?.uid, isAdmin = false }) {
+export default function App({ user, uid = user?.uid }) {
   const { trips, status: tripsStatus, error: tripsError } = useAccountTrips(user || { uid, email: '' });
   const [selectedId, setSelectedId] = useSyncedState('travel-planner-selected-v1', 'nha-trang', uid, 'selected-trip');
   const [adding, setAdding] = useState(false);
   const [addError, setAddError] = useState('');
-  const [inviteError, setInviteError] = useState('');
-  const inviteToken = new URLSearchParams(window.location.search).get('invite');
   const selected = trips.find(trip => trip.id === selectedId) || trips[0] || null;
-  useEffect(() => {
-    if (!inviteToken || !uid) return;
-    httpsCallable(functions, 'acceptTripInviteLink')({ token: inviteToken }).then(result => {
-      setSelectedId(result.data.tripId);
-      window.history.replaceState({}, '', window.location.pathname);
-      setInviteError('여행 초대를 수락했습니다.');
-    }).catch(() => {
-      setInviteError('초대 링크가 만료되었거나 초대 기능이 아직 배포되지 않았습니다.');
-      window.history.replaceState({}, '', window.location.pathname);
-    });
-  }, [inviteToken, uid]);
   const addTrip = async trip => {
     try {
       const created = await createTrip(user || { uid, email: '' }, trip);
@@ -1010,6 +996,6 @@ export default function App({ user, uid = user?.uid, isAdmin = false }) {
     }
   };
   if (tripsError || tripsStatus !== 'ready') return <main className="auth-screen"><section className="auth-card"><h1>{tripsError ? 'Firebase 연결 확인 필요' : '여행 데이터 불러오는 중…'}</h1><p>{tripsError || '잠시만 기다려 주세요.'}</p></section></main>;
-  if (!selected) return <main className="auth-screen"><section className="auth-card"><span className="auth-kicker">YOUR TRIPS</span><h1>여행을 시작해 보세요</h1><p>초대받은 여행은 링크를 열고 로그인하면 목록에 나타납니다.</p><button className="auth-submit" onClick={() => setAdding(true)}>여행 추가</button>{adding && <AddTripDialog onClose={() => setAdding(false)} onAdd={addTrip}/>}</section></main>;
-  return <><TripWorkspace key={selected.id} trip={selected} trips={trips} uid={uid} user={user} isAdmin={isAdmin} selectTrip={id => { setSelectedId(id); window.scrollTo(0, 0); }} openAddTrip={() => setAdding(true)} onTripDelete={async deletedId => { const nextTrip = trips.find(trip => trip.id !== deletedId); if (nextTrip) setSelectedId(nextTrip.id); }}/>{(addError || inviteError) && <p className="form-error" role="status">{addError || inviteError}</p>}{adding && <AddTripDialog onClose={() => setAdding(false)} onAdd={addTrip}/>}</>;
+  if (!selected) return <main className="auth-screen"><section className="auth-card"><span className="auth-kicker">YOUR TRIPS</span><h1>여행을 시작해 보세요</h1><p>첫 여행을 추가하면 일정과 예산을 이 계정에 저장합니다.</p><button className="auth-submit" onClick={() => setAdding(true)}>여행 추가</button>{adding && <AddTripDialog onClose={() => setAdding(false)} onAdd={addTrip}/>}</section></main>;
+  return <><TripWorkspace key={selected.id} trip={selected} trips={trips} uid={uid} selectTrip={id => { setSelectedId(id); window.scrollTo(0, 0); }} openAddTrip={() => setAdding(true)} onTripDelete={async deletedId => { const nextTrip = trips.find(trip => trip.id !== deletedId); if (nextTrip) setSelectedId(nextTrip.id); }}/>{addError && <p className="form-error" role="status">{addError}</p>}{adding && <AddTripDialog onClose={() => setAdding(false)} onAdd={addTrip}/>}</>;
 }

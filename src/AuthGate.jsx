@@ -1,20 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, signOut } from 'firebase/auth';
-import { httpsCallable } from 'firebase/functions';
-import { auth, functions } from './firebase';
+import { auth } from './firebase';
 import './auth.css';
 
 export default function AuthGate({ children }) {
   const [session, setSession] = useState(undefined);
   useEffect(() => onAuthStateChanged(auth, async user => {
     if (!user) { setSession(null); return; }
-    const token = await user.getIdTokenResult().catch(() => ({ claims: {} }));
-    setSession({ user, isAdmin: token.claims.admin === true });
-    httpsCallable(functions, 'recordAppAccess')().catch(() => {});
+    setSession(user);
   }), []);
   if (session === undefined) return <main className="auth-screen"><p>Firebase 연결 확인 중…</p></main>;
   if (!session) return <SignIn />;
-  return <>{children(session.user, session.isAdmin)}<button className="auth-signout" onClick={() => signOut(auth)}>로그아웃</button></>;
+  return <>{children(session)}<button className="auth-signout" onClick={() => signOut(auth)}>로그아웃</button></>;
 }
 
 function SignIn() {

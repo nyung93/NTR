@@ -8,6 +8,6 @@ import './trip-features.css';
 
 createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <AuthGate>{(user, isAdmin) => <App key={user.uid} user={user} uid={user.uid} isAdmin={isAdmin} />}</AuthGate>
+    <AuthGate>{user => <App key={user.uid} user={user} uid={user.uid} />}</AuthGate>
   </React.StrictMode>
 );

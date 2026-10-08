@@ -2,50 +2,32 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() { return request.auth != null; }
-    function own(uid) { return signedIn() && request.auth.uid == uid; }
-    function tripData(tripId) { return get(/databases/$(database)/documents/trips/$(tripId)).data; }
-    function isTripMember(tripId) { return signedIn() && request.auth.uid in tripData(tripId).memberUids; }
-    function canEditTrip(tripId) {
-      return isTripMember(tripId) &&
-        (request.auth.uid == tripData(tripId).ownerUid || request.auth.uid in tripData(tripId).editorUids);
-    }
-    function isTripOwner(tripId) {
-      return signedIn() && request.auth.uid == tripData(tripId).ownerUid;
+    function ownsTrip(tripId) {
+      return signedIn() && request.auth.uid ==
+        get(/databases/$(database)/documents/trips/$(tripId)).data.ownerUid;
     }
 
+    // Each trip is private to the account that created it.
     match /trips/{tripId} {
       allow create: if signedIn()
         && request.resource.data.ownerUid == request.auth.uid
-        && request.resource.data.memberUids.size() == 1
-        && request.auth.uid in request.resource.data.memberUids
+        && request.resource.data.memberUids == [request.auth.uid]
         && request.resource.data.editorUids.size() == 0;
-      allow get, list: if signedIn() && request.auth.uid in resource.data.memberUids;
-      allow update: if canEditTrip(tripId)
+      allow get, list: if signedIn() && resource.data.ownerUid == request.auth.uid;
+      allow update: if signedIn()
+        && resource.data.ownerUid == request.auth.uid
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'start', 'end', 'updatedAt']);
-      allow delete: if isTripOwner(tripId);
+      allow delete: if signedIn() && resource.data.ownerUid == request.auth.uid;
 
       match /planner/{sectionId} {
-        allow read: if isTripMember(tripId);
-        allow create, update, delete: if canEditTrip(tripId)
+        allow read, write: if ownsTrip(tripId)
           && sectionId in ['overview', 'itinerary', 'budget', 'spa'];
-      }
-      match /invites/{inviteId} {
-        allow read, write: if false;
       }
     }
 
-    // Legacy owner data remains readable during the one-time migration to trips/{tripId}.
+    // Keep existing private records available for the one-time migration.
     match /users/{userId}/planner/{documentId} {
-      allow read, write: if own(userId);
-    }
-    match /adminAccess/{userId} {
-      allow read, write: if false;
-    }
-    match /adminTripViews/{viewId} {
-      allow read, write: if false;
-    }
-    match /shareInvites/{inviteId} {
-      allow read, write: if false;
+      allow read, write: if signedIn() && request.auth.uid == userId;
     }
   }
 }

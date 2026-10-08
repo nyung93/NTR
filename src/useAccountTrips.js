@@ -79,7 +79,7 @@ export function useAccountTrips(user) {
     setError('');
     migrateAccountTrips(uid, user.email).then(() => {
       if (!active) return;
-      const tripsQuery = query(collection(db, 'trips'), where('memberUids', 'array-contains', uid));
+      const tripsQuery = query(collection(db, 'trips'), where('ownerUid', '==', uid));
       unsubscribe = onSnapshot(tripsQuery, snapshot => {
         setTrips(snapshot.docs.map(item => ({ id: item.id, ...item.data() })).sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)));
         setStatus('ready');
