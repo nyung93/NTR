@@ -9,3 +9,16 @@
 .spa-event-toggle{display:flex!important;grid-template-columns:auto 1fr!important;align-items:center;justify-content:start;gap:9px!important}.spa-event-toggle input{width:17px;height:17px;min-height:auto}
 @media(max-width:850px){.trip-top-actions{gap:5px}.trip-top-actions button{padding:8px;font-size:12px}.trip-top-actions button svg{display:none}.hotel-card .hotel-photo{width:34%;min-height:0}.admin-heading{flex-direction:column}.admin-heading>div:last-child{width:100%}}
 @media(max-width:600px){.trip-top-actions button{font-size:11px;padding:7px}.overview-grid .flight-card,.overview-grid .hotel-card,.overview-empty{height:174px;min-height:174px}.overview-grid .flight-card{padding:11px!important}.overview-grid .flight-card>.flex:first-child{margin-bottom:8px}.hotel-card .hotel-photo{width:32%;min-height:0}.hotel-card>div{padding:10px!important}.hotel-card .bg-gray-50{gap:4px}.hotel-card .bg-gray-50 p:last-child{font-size:12px}.trip-modal{padding:19px;border-radius:18px}.trip-settings-modal{padding:19px}.trip-settings-modal>header{flex:none}.trip-settings-modal>footer{flex:none}.trip-own-uid{grid-template-columns:1fr auto}.trip-own-uid code{grid-column:1/-1;grid-row:2}.trip-share-uid-entry{grid-template-columns:1fr}.share-add-form{grid-template-columns:1fr}.share-add-form .trip-primary{min-height:43px}.overview-editor .trip-date-grid{grid-template-columns:1fr 1fr}.admin-table{min-width:670px}.admin-heading>div:last-child .trip-secondary{flex:1}.schedule-grid{grid-template-columns:minmax(0,1fr)}.schedule-card{padding:13px}.schedule-category{font-size:10px;padding:4px 7px}.schedule-route-links{gap:5px}.schedule-route-links>a{padding:6px 7px;font-size:10px}.schedule-add-row{margin-top:12px}}
+
+/* Mobile itinerary controls scroll horizontally; schedule time stays prominent. */
+@media(max-width:600px){
+  .day-tabs{display:flex;grid-template-columns:none;gap:7px;width:100%;box-sizing:border-box;overflow-x:auto;overflow-y:hidden;padding:6px;scroll-snap-type:x mandatory;overscroll-behavior-x:contain;touch-action:pan-x;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .day-tabs::-webkit-scrollbar{display:none}
+  .day-tab{box-sizing:border-box;flex:0 0 92px;width:92px;min-width:92px;min-height:58px;padding:8px 6px;scroll-snap-align:start}
+  .day-tab-number{font-size:14px;white-space:nowrap}
+  .day-tab-date{font-size:12px;white-space:nowrap}
+  .schedule-card-header{display:grid;grid-template-columns:max-content 1fr;grid-template-areas:'time category' 'actions actions';align-items:center;column-gap:8px;row-gap:7px}
+  .schedule-time{grid-area:time;display:inline-flex;align-items:center;justify-content:center;min-width:58px;min-height:32px;box-sizing:border-box;padding:4px 8px;border:1px solid #d9d5ed;border-radius:9px;background:#f2f0fa;color:#4e467e;font-size:15px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .schedule-category{grid-area:category;justify-self:start}
+  .schedule-actions{grid-area:actions;justify-self:end;margin:0}
+}
