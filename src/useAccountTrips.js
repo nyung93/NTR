@@ -84,19 +84,41 @@ export function useAccountTrips(user) {
       const ownerQuery = query(tripsCollection, where('ownerUid', '==', uid));
       let memberTrips = [];
       let ownedTrips = [];
+      let memberState = 'loading';
+      let ownerState = 'loading';
+      let memberError = null;
+      let ownerError = null;
       const publishTrips = () => {
-        const uniqueTrips = new Map([...memberTrips, ...ownedTrips].map(item => [item.id, { id: item.id, ...item.data() }]));
+        const availableTrips = [
+          ...(memberState === 'ready' ? memberTrips : []),
+          ...(ownerState === 'ready' ? ownedTrips : []),
+        ];
+        const uniqueTrips = new Map(availableTrips.map(item => [item.id, { id: item.id, ...item.data() }]));
         setTrips([...uniqueTrips.values()].sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)));
         setStatus('ready');
+        setError('');
       };
-      const handleTripsError = syncError => {
-        setStatus('error');
-        setError(syncError.code === 'permission-denied'
-          ? '여행 목록 권한이 없습니다. Firebase Firestore 규칙을 업데이트해 주세요.'
-          : 'Firebase에서 여행 목록을 불러오지 못했습니다. 연결을 확인해 주세요.');
+      const handleTripsError = (source, syncError) => {
+        if (source === 'member') {
+          memberState = 'error';
+          memberError = syncError;
+        } else {
+          ownerState = 'error';
+          ownerError = syncError;
+        }
+        if (memberState === 'ready' || ownerState === 'ready') {
+          publishTrips();
+          return;
+        }
+        if (memberState === 'error' && ownerState === 'error') {
+          setStatus('error');
+          setError(memberError.code === 'permission-denied' && ownerError.code === 'permission-denied'
+            ? `여행 목록 읽기가 두 경로에서 모두 거부됐습니다. 현재 로그인 UID ${uid}가 여행 문서의 ownerUid 또는 memberUids에 있는지 확인해 주세요.`
+            : 'Firebase에서 여행 목록을 불러오지 못했습니다. 연결 상태를 확인해 주세요.');
+        }
       };
-      const stopMemberTrips = onSnapshot(memberQuery, snapshot => { memberTrips = snapshot.docs; publishTrips(); }, handleTripsError);
-      const stopOwnedTrips = onSnapshot(ownerQuery, snapshot => { ownedTrips = snapshot.docs; publishTrips(); }, handleTripsError);
+      const stopMemberTrips = onSnapshot(memberQuery, snapshot => { memberTrips = snapshot.docs; memberState = 'ready'; publishTrips(); }, error => handleTripsError('member', error));
+      const stopOwnedTrips = onSnapshot(ownerQuery, snapshot => { ownedTrips = snapshot.docs; ownerState = 'ready'; publishTrips(); }, error => handleTripsError('owner', error));
       unsubscribe = () => { stopMemberTrips(); stopOwnedTrips(); };
     }).catch(syncError => {
       if (!active) return;
