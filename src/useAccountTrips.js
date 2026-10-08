@@ -79,16 +79,25 @@ export function useAccountTrips(user) {
     setError('');
     migrateAccountTrips(uid, user.email).then(() => {
       if (!active) return;
-      const tripsQuery = query(collection(db, 'trips'), where('memberUids', 'array-contains', uid));
-      unsubscribe = onSnapshot(tripsQuery, snapshot => {
-        setTrips(snapshot.docs.map(item => ({ id: item.id, ...item.data() })).sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)));
+      const tripsCollection = collection(db, 'trips');
+      const memberQuery = query(tripsCollection, where('memberUids', 'array-contains', uid));
+      const ownerQuery = query(tripsCollection, where('ownerUid', '==', uid));
+      let memberTrips = [];
+      let ownedTrips = [];
+      const publishTrips = () => {
+        const uniqueTrips = new Map([...memberTrips, ...ownedTrips].map(item => [item.id, { id: item.id, ...item.data() }]));
+        setTrips([...uniqueTrips.values()].sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)));
         setStatus('ready');
-      }, syncError => {
+      };
+      const handleTripsError = syncError => {
         setStatus('error');
         setError(syncError.code === 'permission-denied'
           ? '여행 목록 권한이 없습니다. Firebase Firestore 규칙을 업데이트해 주세요.'
           : 'Firebase에서 여행 목록을 불러오지 못했습니다. 연결을 확인해 주세요.');
-      });
+      };
+      const stopMemberTrips = onSnapshot(memberQuery, snapshot => { memberTrips = snapshot.docs; publishTrips(); }, handleTripsError);
+      const stopOwnedTrips = onSnapshot(ownerQuery, snapshot => { ownedTrips = snapshot.docs; publishTrips(); }, handleTripsError);
+      unsubscribe = () => { stopMemberTrips(); stopOwnedTrips(); };
     }).catch(syncError => {
       if (!active) return;
       setStatus('error');

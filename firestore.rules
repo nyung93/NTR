@@ -6,7 +6,10 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/trips/$(tripId)).data;
     }
     function isTripMember(tripId) {
-      return signedIn() && request.auth.uid in tripData(tripId).memberUids;
+      return signedIn() && (
+        request.auth.uid == tripData(tripId).ownerUid
+        || request.auth.uid in tripData(tripId).get('memberUids', [])
+      );
     }
     function isTripOwner(tripId) {
       return signedIn() && request.auth.uid == tripData(tripId).ownerUid;
@@ -20,9 +23,13 @@ service cloud.firestore {
         && request.resource.data.editorUids.size() == 0;
       allow get: if signedIn() && (
         !exists(/databases/$(database)/documents/trips/$(tripId))
-        || request.auth.uid in resource.data.memberUids
+        || request.auth.uid == resource.data.ownerUid
+        || request.auth.uid in resource.data.get('memberUids', [])
       );
-      allow list: if signedIn() && request.auth.uid in resource.data.memberUids;
+      allow list: if signedIn() && (
+        request.auth.uid == resource.data.ownerUid
+        || request.auth.uid in resource.data.get('memberUids', [])
+      );
       allow update: if isTripOwner(tripId)
         && request.resource.data.ownerUid == resource.data.ownerUid
         && request.resource.data.memberUids.size() <= 20
