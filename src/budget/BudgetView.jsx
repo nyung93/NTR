@@ -1,8 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Wallet, Plus, X, ArrowRight, Copy, Pencil, Trash2, Download } from 'lucide-react';
-import { CATEGORIES, CURRENCIES, won, money, amount, initialLedger, cashRemaining, normalizeExpense, normalizeExchange, normalizeTransfer, summarize } from './model';
+import { CATEGORIES, CURRENCIES, won, money, amount, cashRemaining, normalizeExpense, normalizeExchange, normalizeTransfer, summarize } from './model';
 import './budget.css';
-import { useSyncedState } from '../useSyncedState';
 
 const today = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
 const methods = { card: '카드', cash: '현금', bank: '계좌이체' };
@@ -79,9 +78,7 @@ function SettingsEditor({ ledger, save, close }) {
   </form></Dialog>;
 }
 
-export default function BudgetView({ trip, uid }) {
-  const storageKey = `trip-${trip.id}-budget-v1`;
-  const [ledger, setLedger, syncStatus, syncError] = useSyncedState(storageKey, initialLedger(trip.id === 'nha-trang'), uid, `${trip.id}-budget`);
+export default function BudgetView({ trip, ledger, setLedger, syncStatus, syncError }) {
   const [error, setError] = useState('');
   const [section, setSection] = useState('expenses');
   const [filter, setFilter] = useState('all');
@@ -110,7 +107,7 @@ export default function BudgetView({ trip, uid }) {
   const visible = ledger.expenses.filter(e => (filter === 'all' || e.status === filter) && (category === 'all' || e.category === category)).sort((a, b) => b.date.localeCompare(a.date));
   return <div className="budget-view">
     <div className="budget-toolbar"><div><h2><Wallet size={22}/> 예산·정산</h2><p>여행별 지출, 환전, 정산을 한곳에서 관리합니다.</p></div><button className="budget-secondary" onClick={() => setModal({ type: 'settings' })}>예산·참여자 설정</button></div>
-    <p className="budget-local-note">{syncError || (syncStatus === 'synced' ? 'Firebase 계정에 저장되어 다른 기기에서도 확인할 수 있습니다.' : 'Firebase에 연결 중…')}</p>
+    <p className="budget-local-note">{syncError || (syncStatus === 'ready' ? 'Firebase 계정에 저장되어 함께 여행하는 사람과 공유됩니다.' : 'Firebase에 연결 중…')}</p>
     {error && <p role="alert" className="budget-error">{error}</p>}{notice && <p role="status" className="budget-notice">{notice}<button aria-label="알림 닫기" onClick={() => setNotice('')}><X size={16}/></button></p>}
     <div className="budget-summary">{[['전체 예산', ledger.budget ? won(ledger.budget) : '미설정'], ['실제 지출', won(summary.paid)], ['앞으로 쓸 금액', won(summary.planned)], ['예정 포함 남은 예산', ledger.budget ? won(summary.remaining) : '예산을 설정하세요']].map(([label, value]) => <div key={label}><span>{label}</span><strong>{value}</strong></div>)}</div>
     {ledger.budget > 0 && summary.remaining < 0 && <p className="budget-error">예정 금액까지 포함하면 예산을 {won(-summary.remaining)} 초과합니다.</p>}
