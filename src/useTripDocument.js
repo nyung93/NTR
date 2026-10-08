@@ -12,7 +12,7 @@ function readStored(keys, fallback) {
   return fallback;
 }
 
-export function useTripDocument({ uid, tripId, section, initialValue, legacyKeys = [], legacyId = '' }) {
+export function useTripDocument({ uid, tripId, section, initialValue, legacyKeys = [], legacyId = '', canWrite = true }) {
   const accountKey = `planner:${uid}:${tripId}:${section}`;
   const oldCloudKey = legacyId ? `${legacyId}-${section}` : '';
   const [value, setValue] = useState(() => readStored([accountKey, ...legacyKeys], initialValue));
@@ -44,7 +44,7 @@ export function useTripDocument({ uid, tripId, section, initialValue, legacyKeys
           const legacySnapshot = oldCloudKey ? await getDoc(doc(db, 'users', uid, 'planner', oldCloudKey)) : null;
           const seed = legacySnapshot?.exists() && Object.hasOwn(legacySnapshot.data(), 'value')
             ? legacySnapshot.data().value : readStored([accountKey, ...legacyKeys], initialValue);
-          await setDoc(reference, { value: seed, updatedAt: serverTimestamp(), updatedBy: uid });
+          if (canWrite) await setDoc(reference, { value: seed, updatedAt: serverTimestamp(), updatedBy: uid });
           serialized.current = JSON.stringify(seed);
           if (JSON.stringify(seed) !== JSON.stringify(value)) setValue(seed);
         }
@@ -66,10 +66,10 @@ export function useTripDocument({ uid, tripId, section, initialValue, legacyKeys
         : '여행 데이터를 Firebase에서 불러오지 못했습니다.');
     });
     return () => { ready.current = false; unsubscribe(); };
-  }, [uid, tripId, section, accountKey, oldCloudKey]);
+  }, [uid, tripId, section, accountKey, oldCloudKey, canWrite]);
 
   useEffect(() => {
-    if (!ready.current || status === 'error') return undefined;
+    if (!ready.current || status === 'error' || !canWrite) return undefined;
     const next = JSON.stringify(value);
     if (next === serialized.current) return undefined;
     const reference = doc(db, 'trips', tripId, 'planner', section);
@@ -87,7 +87,7 @@ export function useTripDocument({ uid, tripId, section, initialValue, legacyKeys
       }
     }, 350);
     return () => clearTimeout(timer);
-  }, [uid, tripId, section, status, value]);
+  }, [uid, tripId, section, status, value, canWrite]);
 
   return [value, setValue, status, error];
 }

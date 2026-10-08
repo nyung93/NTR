@@ -2,12 +2,17 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() { return request.auth != null; }
-    function ownsTrip(tripId) {
-      return signedIn() && request.auth.uid ==
-        get(/databases/$(database)/documents/trips/$(tripId)).data.ownerUid;
+    function tripData(tripId) {
+      return get(/databases/$(database)/documents/trips/$(tripId)).data;
+    }
+    function isTripMember(tripId) {
+      return signedIn() && request.auth.uid in tripData(tripId).memberUids;
+    }
+    function isTripOwner(tripId) {
+      return signedIn() && request.auth.uid == tripData(tripId).ownerUid;
     }
 
-    // Each trip is private to the account that created it.
+    // Only explicitly listed Firebase Authentication UIDs can read a trip.
     match /trips/{tripId} {
       allow create: if signedIn()
         && request.resource.data.ownerUid == request.auth.uid
@@ -15,16 +20,21 @@ service cloud.firestore {
         && request.resource.data.editorUids.size() == 0;
       allow get: if signedIn() && (
         !exists(/databases/$(database)/documents/trips/$(tripId))
-        || resource.data.ownerUid == request.auth.uid
+        || request.auth.uid in resource.data.memberUids
       );
-      allow list: if signedIn() && resource.data.ownerUid == request.auth.uid;
-      allow update: if signedIn()
-        && resource.data.ownerUid == request.auth.uid
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'start', 'end', 'updatedAt']);
-      allow delete: if signedIn() && resource.data.ownerUid == request.auth.uid;
+      allow list: if signedIn() && request.auth.uid in resource.data.memberUids;
+      allow update: if isTripOwner(tripId)
+        && request.resource.data.ownerUid == resource.data.ownerUid
+        && request.resource.data.memberUids.size() <= 20
+        && request.resource.data.ownerUid in request.resource.data.memberUids
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'start', 'end', 'purpose', 'participants', 'memberUids', 'updatedAt']);
+      allow delete: if isTripOwner(tripId);
 
       match /planner/{sectionId} {
-        allow read, write: if ownsTrip(tripId)
+        allow read: if isTripMember(tripId)
+          && sectionId in ['overview', 'itinerary', 'budget', 'spa'];
+        allow create, update, delete: if isTripMember(tripId)
+          && (isTripOwner(tripId) || sectionId in ['itinerary', 'budget', 'spa'])
           && sectionId in ['overview', 'itinerary', 'budget', 'spa'];
       }
     }

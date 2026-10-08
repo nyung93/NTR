@@ -1,4 +1,5 @@
 import BudgetView from './budget/BudgetView';
+import { TripSettingsDialog, DashboardItemEditor } from './TripEditors';
 import { useSyncedState } from './useSyncedState';
 import { useTripDocument } from './useTripDocument';
 import { useAccountTrips, createTrip } from './useAccountTrips';
@@ -10,6 +11,8 @@ import {
   Wallet,
   PlaneTakeoff, 
   PlaneLanding, 
+  Bus,
+  Footprints,
   Building2, 
   CalendarDays, 
   MapPin, 
@@ -234,21 +237,6 @@ const getCategoryMeta = (type) => {
   }
 };
 
-const getTravelTime = (from, to) => {
-  if(!from || !to || from === to) return null;
-  
-  const isCity = (loc) => ['사타', '담시장', '마담프엉', '제시', '롯데마트', '시내', '빈산'].some(k => loc.includes(k));
-  const isResort = (loc) => loc.includes('퓨전');
-  const isAirport = (loc) => loc.includes('공항');
-
-  if (isCity(from) && isCity(to)) return '약 5~10분 소요';
-  if ((isAirport(from) && isCity(to)) || (isCity(from) && isAirport(to))) return '약 45분 소요';
-  if ((isAirport(from) && isResort(to)) || (isResort(from) && isAirport(to))) return '약 10분 소요';
-  if ((isCity(from) && isResort(to)) || (isResort(from) && isCity(to))) return '약 35분 소요';
-  
-  return '약 10~15분 소요'; 
-};
-
 const FlightCard = ({ flight, onEdit, onDelete }) => {
   const isDeparture = flight.type === "departure";
   
@@ -264,7 +252,7 @@ const FlightCard = ({ flight, onEdit, onDelete }) => {
             <h4 className="font-semibold text-gray-900 text-[15px] mt-0.5">{flight.airline} {flight.flightNumber}</h4>
           </div>
         </div>
-        <div className="overview-card-actions"><button type="button" onClick={onEdit} aria-label="항공편 수정"><Pencil size={16}/></button><button type="button" onClick={onDelete} aria-label="항공편 삭제"><Trash2 size={16}/></button></div>
+        {(onEdit || onDelete) && <div className="overview-card-actions">{onEdit && <button type="button" onClick={onEdit} aria-label="항공편 수정"><Pencil size={16}/></button>}{onDelete && <button type="button" onClick={onDelete} aria-label="항공편 삭제"><Trash2 size={16}/></button>}</div>}
       </div>
 
       <div className="flex justify-between items-center relative">
@@ -309,7 +297,7 @@ const HotelCard = ({ hotel, onEdit, onDelete }) => {
           <div>
             <span className="text-[13px] font-bold text-[#6250B5] bg-[#6250B5]/10 px-2 py-1 rounded-full">숙소</span>
             <h3 className="font-bold text-gray-900 mt-2.5 text-lg">{hotel.name}</h3>
-          </div><div className="overview-card-actions"><button type="button" onClick={onEdit} aria-label="숙소 수정"><Pencil size={16}/></button><button type="button" onClick={onDelete} aria-label="숙소 삭제"><Trash2 size={16}/></button></div>
+          </div>{(onEdit || onDelete) && <div className="overview-card-actions">{onEdit && <button type="button" onClick={onEdit} aria-label="숙소 수정"><Pencil size={16}/></button>}{onDelete && <button type="button" onClick={onDelete} aria-label="숙소 삭제"><Trash2 size={16}/></button>}</div>}
         </div>
         
         <div className="flex items-start space-x-1.5 text-gray-500 text-[15px] mb-5 mt-1">
@@ -339,9 +327,13 @@ const ItineraryView = ({ itinerary, setItinerary, massageSchedule, days: tripDay
   const [editingId, setEditingId] = useState(null);
   const [newSchedule, setNewSchedule] = useState({ time: '12:00', title: '', category: 'food', location: '' });
 
-  const handleMapOpen = (query) => {
-    if(!query) return;
-    window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`, '_blank');
+  const googleMapsSearchUrl = query => {
+    const params = new URLSearchParams({ api: '1', query });
+    return 'https://www.google.com/maps/search/?' + params.toString();
+  };
+  const googleMapsRouteUrl = (origin, destination, travelmode) => {
+    const params = new URLSearchParams({ api: '1', origin, destination, travelmode });
+    return 'https://www.google.com/maps/dir/?' + params.toString();
   };
 
   const openAdd = () => {
@@ -398,101 +390,43 @@ const ItineraryView = ({ itinerary, setItinerary, massageSchedule, days: tripDay
       </div>
 
       <div className="itinerary-body flex-1 bg-white rounded-t-3xl border-t border-gray-100 p-5 shadow-[0_-4px_20px_rgba(0,0,0,0.02)] overflow-y-auto pb-safe-area">
-        <div className="relative">
-          {/* Vertical Timeline Line */}
-          <div className="absolute left-[64px] top-4 bottom-4 w-[2px] bg-gray-100 z-0"></div>
-
+        <div className="schedule-grid">
           {!itinerary[selectedDay]?.length && <p className="empty-day">등록된 일정이 없습니다. 아래 버튼으로 일정을 추가하세요.</p>}
           {itinerary[selectedDay]?.map((item, index) => {
-            const { Icon, color, bg, lightBg, text } = getCategoryMeta(item.category);
+            const { Icon, color, lightBg, text } = getCategoryMeta(item.category);
             const nextItem = itinerary[selectedDay][index + 1];
-            const travelTime = nextItem ? getTravelTime(item.location, nextItem.location) : null;
-
-            let displayTitle = item.title;
+            const canRoute = Boolean(item.location?.trim() && nextItem?.location?.trim() && item.location.trim() !== nextItem.location.trim());
+            let displayTitle = <span className="text-[15px] font-bold text-gray-900 leading-snug">{item.title}</span>;
             if (item.isSpa) {
-              const dayIndex = tripDays.findIndex(d => d.id === selectedDay);
+              const dayIndex = tripDays.findIndex(day => day.id === selectedDay);
               const daySchedule = massageSchedule[dayIndex] || {};
               const minName = daySchedule['민영'] ? getMassageById(daySchedule['민영'])?.name : null;
               const damiName = daySchedule['다미'] ? getMassageById(daySchedule['다미'])?.name : null;
-
-              if (minName || damiName) {
-                displayTitle = (
-                  <div className="flex flex-col mt-0.5">
-                    <span className="text-[15px] font-bold text-gray-900">{item.title}</span>
-                    <span className="text-[13px] font-bold text-[#6C5498] mt-1.5 bg-[#6C5498]/10 px-2 py-1 rounded-lg w-fit border border-[#6C5498]/20">
-                      민영: {minName || '미정'} / 다미: {damiName || '미정'}
-                    </span>
-                  </div>
-                );
-              } else {
-                displayTitle = (
-                  <div className="flex flex-col mt-0.5">
-                    <span className="text-[15px] font-bold text-gray-900">{item.title}</span>
-                    <span className="text-[13px] font-medium text-gray-400 mt-1">스파 계획에서 프로그램을 선택하세요</span>
-                  </div>
-                );
-              }
-            } else {
-              displayTitle = <span className="text-[15px] font-bold text-gray-900 leading-snug">{item.title}</span>;
+              displayTitle = <div className="flex flex-col mt-0.5"><span className="text-[15px] font-bold text-gray-900">{item.title}</span>{minName || damiName ? <span className="text-[13px] font-bold text-[#6C5498] mt-1.5 bg-[#6C5498]/10 px-2 py-1 rounded-lg w-fit">민영: {minName || '미정'} / 다미: {damiName || '미정'}</span> : <span className="text-[13px] font-medium text-gray-400 mt-1">스파 계획에서 프로그램을 선택하세요</span>}</div>;
             }
-
-            return (
-              <div key={item.id} className="relative z-10 mb-2">
-                <div className="flex items-start">
-                  <div className="schedule-time w-[42px] shrink-0 pt-2.5 text-right">
-                    <span className="text-[13px] font-bold text-gray-800 tracking-tighter">{item.time}</span>
-                  </div>
-
-                  <div className="flex flex-col items-center mx-3 relative z-10 shrink-0">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${lightBg} shadow-sm border-2 border-white ring-1 ring-gray-100`}>
-                      <Icon size={14} className={color} />
-                    </div>
-                  </div>
-
-                  <div className="schedule-card min-w-0 flex-1 bg-white border border-gray-100 shadow-sm rounded-2xl p-3 hover:border-[#6250B5]/30 hover:shadow-md transition-all">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <span className={`text-[13px] font-bold px-1.5 py-0.5 rounded flex items-center w-max mb-1.5 ${lightBg} ${color}`}>
-                          {text}
-                        </span>
-                        <div className="pr-2">{displayTitle}</div>
-                      </div>
-                      
-                      {item.mapQuery && (
-                        <button 
-                          onClick={() => handleMapOpen(item.mapQuery)}
-                          className="p-1.5 bg-gray-50 text-gray-400 rounded-full hover:bg-gray-100 hover:text-gray-700 transition-colors shrink-0"
-                        >
-                          <Navigation size={14} />
-                        </button>
-                      )}
-                      <div className="schedule-actions"><button type="button" aria-label={`${item.title} 수정`} onClick={() => openEdit(item)}><Pencil size={14}/></button><button type="button" aria-label={`${item.title} 삭제`} onClick={() => handleDelete(item)}><Trash2 size={14}/></button></div>
-                    </div>
-                    
-                    {item.location && (
-                      <div className="flex items-center text-gray-500 mt-2 text-[13px] font-medium">
-                        <MapPin size={11} className="mr-1 text-gray-400" />
-                        <span className="line-clamp-1">{item.location}</span>
-                      </div>
-                    )}
-                  </div>
+            return <article key={item.id} className="schedule-card">
+              <header className="schedule-card-header">
+                <time className="schedule-time">{item.time}</time>
+                <span className={'schedule-category ' + lightBg + ' ' + color}><Icon size={14}/>{text}</span>
+                <div className="schedule-actions">
+                  {item.mapQuery && <a href={googleMapsSearchUrl(item.mapQuery)} target="_blank" rel="noreferrer" aria-label={item.title + ' 장소를 Google Maps에서 열기'} title="장소 지도 열기"><Navigation size={15}/></a>}
+                  <button type="button" aria-label={item.title + ' 수정'} onClick={() => openEdit(item)}><Pencil size={14}/></button>
+                  <button type="button" aria-label={item.title + ' 삭제'} onClick={() => handleDelete(item)}><Trash2 size={14}/></button>
                 </div>
-
-                {travelTime && (
-                  <div className="flex items-center ml-[64px] pl-4 my-1 h-5">
-                    <div className="flex items-center bg-gray-50 px-2 py-0.5 rounded-full border border-dashed border-gray-200">
-                      <Car size={10} className="text-gray-400 mr-1" />
-                      <span className="text-[13px] font-semibold text-gray-500">{travelTime}</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
+              </header>
+              <div className="schedule-title">{displayTitle}</div>
+              {item.location && <div className="schedule-location"><MapPin size={13}/><span>{item.location}</span></div>}
+              {canRoute && <div className="schedule-route-links"><span>다음 장소까지</span>
+                <a href={googleMapsRouteUrl(item.location, nextItem.location, 'driving')} target="_blank" rel="noreferrer" aria-label={item.location + '에서 ' + nextItem.location + '까지 자동차 경로'} title="자동차 경로"><Car size={15}/><span>자동차</span></a>
+                <a href={googleMapsRouteUrl(item.location, nextItem.location, 'transit')} target="_blank" rel="noreferrer" aria-label={item.location + '에서 ' + nextItem.location + '까지 대중교통 경로'} title="대중교통 경로"><Bus size={15}/><span>대중교통</span></a>
+                <a href={googleMapsRouteUrl(item.location, nextItem.location, 'walking')} target="_blank" rel="noreferrer" aria-label={item.location + '에서 ' + nextItem.location + '까지 도보 경로'} title="도보 경로"><Footprints size={15}/><span>도보</span></a>
+              </div>}
+            </article>;
           })}
         </div>
 
         {/* Add Button - Match Design Guide Buttons */}
-        <div className="ml-[64px] pl-4 mt-6 mb-4">
+        <div className="schedule-add-row">
           <button 
             onClick={openAdd}
             className="w-full border border-dashed border-gray-300 rounded-2xl py-3 flex items-center justify-center text-gray-400 hover:border-[#6250B5] hover:text-[#6250B5] hover:bg-[#6250B5]/5 transition-all font-bold text-[15px]"
@@ -896,7 +830,8 @@ function TripWorkspace({ trip, trips, selectTrip, openAddTrip, uid, onTripDelete
   const isNhaTrang = trip.legacyId === 'nha-trang' || trip.name === '나트랑';
   const [massageSchedule, setMassageSchedule, spaSync, spaError] = useTripDocument({ uid, tripId: trip.id, section: 'spa', initialValue: {}, legacyId: trip.legacyId, legacyKeys: [isNhaTrang ? 'ntr-spa-v1' : `trip-${trip.legacyId || trip.id}-spa-v1`] });
   const [itinerary, setItinerary, itinerarySync, itineraryError] = useTripDocument({ uid, tripId: trip.id, section: 'itinerary', initialValue: isNhaTrang ? initialItinerary : {}, legacyId: trip.legacyId, legacyKeys: [isNhaTrang ? 'ntr-itinerary-v2' : `trip-${trip.legacyId || trip.id}-itinerary-v1`] });
-  const [overview, setOverview, overviewSync, overviewError] = useTripDocument({ uid, tripId: trip.id, section: 'overview', initialValue: isNhaTrang ? { flights: tripData.flights.map((item, index) => ({ ...item, id: item.id || `flight-${index}` })), hotels: tripData.hotels.map((item, index) => ({ ...item, id: item.id || `hotel-${index}` })) } : { flights: [], hotels: [] }, legacyId: trip.legacyId });
+  const isOwner = trip.ownerUid === uid;
+  const [overview, setOverview, overviewSync, overviewError] = useTripDocument({ uid, tripId: trip.id, section: 'overview', canWrite: isOwner, initialValue: isNhaTrang ? { flights: tripData.flights.map((item, index) => ({ ...item, id: item.id || `flight-${index}` })), hotels: tripData.hotels.map((item, index) => ({ ...item, id: item.id || `hotel-${index}` })) } : { flights: [], hotels: [] }, legacyId: trip.legacyId });
   const [ledger, setLedger, budgetSync, budgetError] = useTripDocument({ uid, tripId: trip.id, section: 'budget', initialValue: initialLedger(isNhaTrang), legacyId: trip.legacyId, legacyKeys: [`trip-${trip.legacyId || trip.id}-budget-v1`] });
   const [editingTrip, setEditingTrip] = useState(false);
   const [editingOverview, setEditingOverview] = useState(null);
@@ -912,7 +847,16 @@ function TripWorkspace({ trip, trips, selectTrip, openAddTrip, uid, onTripDelete
   const navigation = tabs.map(({id,title,icon:Icon}) => <button key={id} aria-current={activeTab === id ? 'page' : undefined} onClick={() => { setActiveTab(id); window.scrollTo({ top: 0, behavior: 'instant' }); }} className={'nav-button ' + (activeTab === id ? 'selected' : '')}><Icon size={20}/><span>{title}</span>{activeTab === id && <ChevronRight size={16} className="nav-arrow"/>}</button>);
   const updateOverviewItem = (kind, item) => setOverview(previous => ({ ...previous, [kind]: (previous[kind] || []).some(row => row.id === item.id) ? previous[kind].map(row => row.id === item.id ? item : row) : [...(previous[kind] || []), item] }));
   const removeOverviewItem = (kind, item) => { if (window.confirm(`“${item.airline || item.name}” 정보를 삭제할까요?`)) setOverview(previous => ({ ...previous, [kind]: previous[kind].filter(row => row.id !== item.id) })); };
-  const saveTrip = async fields => updateDoc(doc(db, 'trips', trip.id), { ...fields, updatedAt: serverTimestamp() });
+  const saveTrip = async fields => {
+    const nextIds = new Set(fields.participants.map(person => person.id));
+    const removed = ledger.people.filter(person => !nextIds.has(person.id));
+    const inUse = removed.some(person => ledger.expenses.some(expense => expense.payer === person.id || Object.hasOwn(expense.shares || {}, person.id))
+      || ledger.exchanges.some(exchange => exchange.owner === person.id)
+      || ledger.transfers.some(transfer => transfer.from === person.id || transfer.to === person.id));
+    if (inUse) throw new Error('예산·정산 내역에서 사용 중인 여행자는 삭제할 수 없습니다. 먼저 관련 내역을 수정해 주세요.');
+    await updateDoc(doc(db, 'trips', trip.id), { ...fields, updatedAt: serverTimestamp() });
+    setLedger(previous => ({ ...previous, people: fields.participants }));
+  };
   const deleteTrip = async () => {
     if (!window.confirm(trip.name + ' 여행과 저장된 일정·예산을 삭제할까요? 이 작업은 되돌릴 수 없습니다.')) return;
     try {
@@ -925,9 +869,9 @@ function TripWorkspace({ trip, trips, selectTrip, openAddTrip, uid, onTripDelete
     }
   };
   const commonOverview = <>
-    {isNhaTrang ? <section className="hero"><div className="hero-shade"/><div className="hero-content"><span className="hero-label"><MapPin size={14}/> VIETNAM, NHA TRANG</span><h2>{trip.name} · {duration}</h2><p>휴식 · 호캉스</p><button onClick={() => setActiveTab('itinerary')}>일정 보기 <ChevronRight size={17}/></button></div></section> : <section className="new-trip-overview"><MapPin size={32}/><h2>{trip.name}</h2><p>{dateLabel} · {duration}</p><button className="primary-action" onClick={() => setActiveTab('itinerary')}>일정 보기 <ChevronRight size={17}/></button></section>}
-    <section className="trip-stats"><div><CalendarDays/><span>여행 기간<strong>{duration}</strong></span></div><div><Luggage/><span>여행 인원<strong>{ledger.people.length}명 · {ledger.people.map(person => person.name).join(', ')}</strong></span></div><div><Building2/><span>숙소<strong>{overview.hotels.length ? overview.hotels.map(hotel => hotel.name).join(' · ') : '숙소를 추가하세요'}</strong></span></div><div><Users/><span>저장 범위<strong>내 계정 전용</strong></span></div></section>
-    <div className="overview-grid"><section><div className="section-heading"><div><span className="eyebrow">FLIGHTS</span><h2>항공편</h2></div><PlaneTakeoff size={22}/></div>{overview.flights.map(flight => <FlightCard key={flight.id} flight={flight} onEdit={() => setEditingOverview({ kind: 'flight', item: flight })} onDelete={() => removeOverviewItem('flights', flight)}/>)}{!overview.flights.length && <p className="overview-empty">항공 정보를 추가해 주세요.</p>}<button className="overview-add-button" onClick={() => setEditingOverview({ kind: 'flight' })}>+ 항공편 추가</button><div className="travel-note"><Info size={17}/><span>출발·도착 시각은 각 공항 현지 시간 기준입니다.</span></div></section><section><div className="section-heading"><div><span className="eyebrow">STAYS</span><h2>숙소</h2></div><Building2 size={22}/></div>{overview.hotels.map(hotel => <HotelCard key={hotel.id} hotel={hotel} onEdit={() => setEditingOverview({ kind: 'hotel', item: hotel })} onDelete={() => removeOverviewItem('hotels', hotel)}/>)}{!overview.hotels.length && <p className="overview-empty">숙소 정보를 추가해 주세요.</p>}<button className="overview-add-button" onClick={() => setEditingOverview({ kind: 'hotel' })}>+ 숙소 추가</button></section></div>
+    {isNhaTrang ? <section className="hero"><div className="hero-shade"/><div className="hero-content"><span className="hero-label"><MapPin size={14}/> VIETNAM, NHA TRANG</span><h2>{trip.name} · {duration}</h2><p>{trip.purpose || '휴식 · 호캉스'}</p><button onClick={() => setActiveTab('itinerary')}>일정 보기 <ChevronRight size={17}/></button></div></section> : <section className="new-trip-overview"><MapPin size={32}/><h2>{trip.name}</h2><p>{dateLabel} · {duration}</p><button className="primary-action" onClick={() => setActiveTab('itinerary')}>일정 보기 <ChevronRight size={17}/></button></section>}
+    <section className="trip-stats"><div><CalendarDays/><span>여행 기간<strong>{duration}</strong></span></div><div><Luggage/><span>여행 인원<strong>{ledger.people.length}명 · {ledger.people.map(person => person.name).join(', ')}</strong></span></div><div><Building2/><span>숙소<strong>{overview.hotels.length ? overview.hotels.map(hotel => hotel.name).join(' · ') : '숙소를 추가하세요'}</strong></span></div><div><Users/><span>함께하는 계정<strong>{trip.memberUids?.length || 1}개</strong></span></div></section>
+    <div className="overview-grid"><section><div className="section-heading"><div><span className="eyebrow">FLIGHTS</span><h2>항공편</h2></div><PlaneTakeoff size={22}/></div>{overview.flights.map(flight => <FlightCard key={flight.id} flight={flight} onEdit={isOwner ? () => setEditingOverview({ kind: 'flight', item: flight }) : undefined} onDelete={isOwner ? () => removeOverviewItem('flights', flight) : undefined}/>)}{!overview.flights.length && <p className="overview-empty">항공 정보를 추가해 주세요.</p>}{isOwner && <button className="overview-add-button" onClick={() => setEditingOverview({ kind: 'flight' })}>+ 항공편 추가</button>}<div className="travel-note"><Info size={17}/><span>출발·도착 시각은 각 공항 현지 시간 기준입니다.</span></div></section><section><div className="section-heading"><div><span className="eyebrow">STAYS</span><h2>숙소</h2></div><Building2 size={22}/></div>{overview.hotels.map(hotel => <HotelCard key={hotel.id} hotel={hotel} onEdit={isOwner ? () => setEditingOverview({ kind: 'hotel', item: hotel }) : undefined} onDelete={isOwner ? () => removeOverviewItem('hotels', hotel) : undefined}/>)}{!overview.hotels.length && <p className="overview-empty">숙소 정보를 추가해 주세요.</p>}{isOwner && <button className="overview-add-button" onClick={() => setEditingOverview({ kind: 'hotel' })}>+ 숙소 추가</button>}</section></div>
     {isNhaTrang && <section className="spa-banner"><div className="spa-banner-icon"><Sparkles size={28}/></div><div><span className="eyebrow">SPA</span><h3>리조트 스파</h3><p>날짜별 프로그램과 이용 횟수를 확인하세요.</p></div><button onClick={() => setActiveTab('massage')}>스파 계획하기 <ChevronRight size={16}/></button></section>}
   </>;
   return <div className="app-shell">
@@ -938,7 +882,7 @@ function TripWorkspace({ trip, trips, selectTrip, openAddTrip, uid, onTripDelete
       {activeTab === 'home' ? commonOverview : <section className="detail-panel">{activeTab === 'itinerary' ? <ItineraryView days={days} itinerary={itinerary} setItinerary={setItinerary} massageSchedule={massageSchedule}/> : activeTab === 'budget' ? <BudgetView trip={trip} ledger={ledger} setLedger={setLedger} syncStatus={budgetSync} syncError={budgetError}/> : <MassageView schedule={massageSchedule} setSchedule={setMassageSchedule}/>}</section>}
       <footer className="page-footer"><span>{trip.name} 여행 계획</span><span>{dateLabel}</span></footer>
     </main><nav className="mobile-nav" style={{gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))`}} aria-label="모바일 메뉴">{navigation}</nav>
-    {editingTrip && <TripSettingsDialog trip={{...trip,currentUid:uid}} onClose={() => setEditingTrip(false)} busy={false} onSave={saveTrip} onDelete={deleteTrip}/>}
+    {editingTrip && <TripSettingsDialog trip={{...trip,participants:ledger.people,currentUid:uid}} onClose={() => setEditingTrip(false)} busy={false} onSave={saveTrip} onDelete={deleteTrip}/>}
     {editingOverview && <DashboardItemEditor type={editingOverview.kind} item={editingOverview.item} onClose={() => setEditingOverview(null)} onSave={item => updateOverviewItem(editingOverview.kind === 'flight' ? 'flights' : 'hotels', item)}/>}
   </div>;
 }
