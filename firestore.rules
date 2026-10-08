@@ -13,7 +13,11 @@ service cloud.firestore {
         && request.resource.data.ownerUid == request.auth.uid
         && request.resource.data.memberUids == [request.auth.uid]
         && request.resource.data.editorUids.size() == 0;
-      allow get, list: if signedIn() && resource.data.ownerUid == request.auth.uid;
+      allow get: if signedIn() && (
+        !exists(/databases/$(database)/documents/trips/$(tripId))
+        || resource.data.ownerUid == request.auth.uid
+      );
+      allow list: if signedIn() && resource.data.ownerUid == request.auth.uid;
       allow update: if signedIn()
         && resource.data.ownerUid == request.auth.uid
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'start', 'end', 'updatedAt']);
