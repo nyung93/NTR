@@ -371,6 +371,12 @@ const ItineraryView = ({ itinerary, setItinerary, massageSchedule, days: tripDay
     setItinerary(prev => ({ ...prev, [selectedDay]: (prev[selectedDay] || []).filter(entry => entry.id !== item.id) }));
   };
 
+  const dayItems = [...(itinerary[selectedDay] || [])].sort((a, b) => a.time.localeCompare(b.time));
+  const schedulePeriods = [
+    { id: 'am', title: '오전', range: '00:00–11:59', items: dayItems.filter(item => Number(item.time?.slice(0, 2)) < 12) },
+    { id: 'pm', title: '오후', range: '12:00–23:59', items: dayItems.filter(item => Number(item.time?.slice(0, 2)) >= 12) },
+  ].filter(period => period.items.length);
+
   return (
     <div className="flex flex-col h-full animate-in fade-in duration-300">
       <div className="px-5 pt-2 pb-4">
@@ -390,39 +396,50 @@ const ItineraryView = ({ itinerary, setItinerary, massageSchedule, days: tripDay
       </div>
 
       <div className="itinerary-body flex-1 bg-white rounded-t-3xl border-t border-gray-100 p-5 shadow-[0_-4px_20px_rgba(0,0,0,0.02)] overflow-y-auto pb-safe-area">
-        <div className="schedule-grid">
-          {!itinerary[selectedDay]?.length && <p className="empty-day">등록된 일정이 없습니다. 아래 버튼으로 일정을 추가하세요.</p>}
-          {itinerary[selectedDay]?.map((item, index) => {
-            const { Icon, color, lightBg, text } = getCategoryMeta(item.category);
-            const nextItem = itinerary[selectedDay][index + 1];
-            const canRoute = Boolean(item.location?.trim() && nextItem?.location?.trim() && item.location.trim() !== nextItem.location.trim());
-            let displayTitle = <span className="text-[15px] font-bold text-gray-900 leading-snug">{item.title}</span>;
-            if (item.isSpa) {
-              const dayIndex = tripDays.findIndex(day => day.id === selectedDay);
-              const daySchedule = massageSchedule[dayIndex] || {};
-              const minName = daySchedule['민영'] ? getMassageById(daySchedule['민영'])?.name : null;
-              const damiName = daySchedule['다미'] ? getMassageById(daySchedule['다미'])?.name : null;
-              displayTitle = <div className="flex flex-col mt-0.5"><span className="text-[15px] font-bold text-gray-900">{item.title}</span>{minName || damiName ? <span className="text-[13px] font-bold text-[#6C5498] mt-1.5 bg-[#6C5498]/10 px-2 py-1 rounded-lg w-fit">민영: {minName || '미정'} / 다미: {damiName || '미정'}</span> : <span className="text-[13px] font-medium text-gray-400 mt-1">스파 계획에서 프로그램을 선택하세요</span>}</div>;
-            }
-            return <article key={item.id} className="schedule-card">
-              <header className="schedule-card-header">
-                <time className="schedule-time">{item.time}</time>
-                <span className={'schedule-category ' + lightBg + ' ' + color}><Icon size={14}/>{text}</span>
-                <div className="schedule-actions">
-                  {item.mapQuery && <a href={googleMapsSearchUrl(item.mapQuery)} target="_blank" rel="noreferrer" aria-label={item.title + ' 장소를 Google Maps에서 열기'} title="장소 지도 열기"><Navigation size={15}/></a>}
-                  <button type="button" aria-label={item.title + ' 수정'} onClick={() => openEdit(item)}><Pencil size={14}/></button>
-                  <button type="button" aria-label={item.title + ' 삭제'} onClick={() => handleDelete(item)}><Trash2 size={14}/></button>
-                </div>
-              </header>
-              <div className="schedule-title">{displayTitle}</div>
-              {item.location && <div className="schedule-location"><MapPin size={13}/><span>{item.location}</span></div>}
-              {canRoute && <div className="schedule-route-links"><span>다음 장소까지</span>
-                <a href={googleMapsRouteUrl(item.location, nextItem.location, 'driving')} target="_blank" rel="noreferrer" aria-label={item.location + '에서 ' + nextItem.location + '까지 자동차 경로'} title="자동차 경로"><Car size={15}/><span>자동차</span></a>
-                <a href={googleMapsRouteUrl(item.location, nextItem.location, 'transit')} target="_blank" rel="noreferrer" aria-label={item.location + '에서 ' + nextItem.location + '까지 대중교통 경로'} title="대중교통 경로"><Bus size={15}/><span>대중교통</span></a>
-                <a href={googleMapsRouteUrl(item.location, nextItem.location, 'walking')} target="_blank" rel="noreferrer" aria-label={item.location + '에서 ' + nextItem.location + '까지 도보 경로'} title="도보 경로"><Footprints size={15}/><span>도보</span></a>
-              </div>}
-            </article>;
-          })}
+        <div className="schedule-agenda">
+          {!dayItems.length && <p className="empty-day">등록된 일정이 없습니다. 아래 버튼으로 일정을 추가하세요.</p>}
+          {schedulePeriods.map(period => <section className={'schedule-period schedule-period-' + period.id} key={period.id} aria-label={period.title + ' 일정'}>
+            <header className="schedule-period-heading">
+              <span className={'period-pixel period-pixel-' + period.id} aria-hidden="true"><i/></span>
+              <h3>{period.title}</h3><span className="period-range">{period.range}</span><span className="period-count">{period.items.length}개 일정</span>
+            </header>
+            <div className="agenda-rows">
+              {period.items.map(item => {
+                const { Icon, color, lightBg, text } = getCategoryMeta(item.category);
+                const itemIndex = dayItems.findIndex(dayItem => dayItem.id === item.id);
+                const nextItem = dayItems[itemIndex + 1];
+                const canRoute = Boolean(item.location?.trim() && nextItem?.location?.trim() && item.location.trim() !== nextItem.location.trim());
+                let displayTitle = <span>{item.title}</span>;
+                if (item.isSpa) {
+                  const dayIndex = tripDays.findIndex(day => day.id === selectedDay);
+                  const daySchedule = massageSchedule[dayIndex] || {};
+                  const minName = daySchedule['민영'] ? getMassageById(daySchedule['민영'])?.name : null;
+                  const damiName = daySchedule['다미'] ? getMassageById(daySchedule['다미'])?.name : null;
+                  displayTitle = <div className="flex flex-col"><span>{item.title}</span>{minName || damiName ? <span className="schedule-spa-detail">민영: {minName || '미정'} / 다미: {damiName || '미정'}</span> : <span className="schedule-spa-empty">스파 계획에서 프로그램을 선택하세요</span>}</div>;
+                }
+                return <article key={item.id} className="agenda-row">
+                  <div className="agenda-time-column"><time className="schedule-time">{item.time}</time></div>
+                  <div className="agenda-row-content">
+                    <header className="agenda-row-header">
+                      <span className={'schedule-category ' + lightBg + ' ' + color}><Icon size={14}/>{text}</span>
+                      <div className="schedule-actions">
+                        {item.mapQuery && <a href={googleMapsSearchUrl(item.mapQuery)} target="_blank" rel="noreferrer" aria-label={item.title + ' 장소를 Google Maps에서 열기'} title="장소 지도 열기"><Navigation size={15}/></a>}
+                        <button type="button" aria-label={item.title + ' 수정'} onClick={() => openEdit(item)}><Pencil size={14}/></button>
+                        <button type="button" aria-label={item.title + ' 삭제'} onClick={() => handleDelete(item)}><Trash2 size={14}/></button>
+                      </div>
+                    </header>
+                    <div className="schedule-title">{displayTitle}</div>
+                    {item.location && <div className="schedule-location"><MapPin size={13}/><span>{item.location}</span></div>}
+                    {canRoute && <div className="schedule-route-links"><span>다음 장소까지</span>
+                      <a href={googleMapsRouteUrl(item.location, nextItem.location, 'driving')} target="_blank" rel="noreferrer" aria-label={item.location + '에서 ' + nextItem.location + '까지 자동차 경로'} title="자동차 경로"><Car size={15}/><span>자동차</span></a>
+                      <a href={googleMapsRouteUrl(item.location, nextItem.location, 'transit')} target="_blank" rel="noreferrer" aria-label={item.location + '에서 ' + nextItem.location + '까지 대중교통 경로'} title="대중교통 경로"><Bus size={15}/><span>대중교통</span></a>
+                      <a href={googleMapsRouteUrl(item.location, nextItem.location, 'walking')} target="_blank" rel="noreferrer" aria-label={item.location + '에서 ' + nextItem.location + '까지 도보 경로'} title="도보 경로"><Footprints size={15}/><span>도보</span></a>
+                    </div>}
+                  </div>
+                </article>;
+              })}
+            </div>
+          </section>)}
         </div>
 
         {/* Add Button - Match Design Guide Buttons */}
