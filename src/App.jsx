@@ -863,12 +863,28 @@ function TripWorkspace({ trip, trips, selectTrip, openAddTrip, uid, email, onTri
     const syncProblem = itineraryError || spaError || overviewError || budgetError;
     return <main className="auth-screen"><section className="auth-card"><h1>{syncProblem ? '여행 데이터 동기화 오류' : '여행 데이터 불러오는 중…'}</h1><p>{syncProblem || '잠시만 기다려 주세요.'}</p></section></main>;
   }
-  const tripPicker = <div className="trip-picker"><label>여행지 선택<select value={trip.id} onChange={e => selectTrip(e.target.value)}>{trips.map(t => {
-    const ownerEmail = (t.ownerEmail || (t.ownerUid === uid ? email : '') || '').toLowerCase();
-    const shared = t.ownerUid !== uid || (t.memberUids || []).some(member => member !== t.ownerUid)
-      || (t.memberEmails || []).some(member => member.toLowerCase() !== ownerEmail);
-    return <option key={t.id} value={t.id}>{t.name} · {shared ? '공유 여행' : '내 여행'}</option>;
-  })}</select></label><button type="button" onClick={openAddTrip}>+ 여행 추가</button></div>;
+  const tripPicker = <div className="trip-picker">
+    <label>여행지 선택</label>
+    <details className="trip-picker-menu">
+      <summary>
+        <span className="trip-picker-current-name">{trip.name}</span>
+        <span className={`trip-owner-badge ${isSharedTrip(trip, uid, email) ? 'is-shared' : 'is-mine'}`}>{isSharedTrip(trip, uid, email) ? '공유' : '나'}</span>
+      </summary>
+      <div className="trip-picker-options">
+        {trips.map(item => {
+          const shared = isSharedTrip(item, uid, email);
+          return <button type="button" key={item.id} aria-current={item.id === trip.id ? 'true' : undefined} onClick={event => {
+            selectTrip(item.id);
+            event.currentTarget.closest('details').open = false;
+          }}>
+            <span>{item.name}</span>
+            <span className={`trip-owner-badge ${shared ? 'is-shared' : 'is-mine'}`}>{shared ? '공유' : '나'}</span>
+          </button>;
+        })}
+      </div>
+    </details>
+    <button type="button" onClick={openAddTrip}>+ 여행 추가</button>
+  </div>;
   const tabs = [{id:'home', title:'여행 한눈에', icon:Home}, {id:'itinerary', title:'여행 일정', icon:CalendarDays}, {id:'budget', title:'예산·정산', icon:Wallet}, ...(isNhaTrang ? [{id:'massage', title:'스파 플래너', icon:Sparkles}] : [])];
   const navigation = tabs.map(({id,title,icon:Icon}) => <button key={id} aria-current={activeTab === id ? 'page' : undefined} onClick={() => { setActiveTab(id); window.scrollTo({ top: 0, behavior: 'instant' }); }} className={'nav-button ' + (activeTab === id ? 'selected' : '')}><Icon size={20}/><span>{title}</span>{activeTab === id && <ChevronRight size={16} className="nav-arrow"/>}</button>);
   const updateOverviewItem = (kind, item) => setOverview(previous => ({ ...previous, [kind]: (previous[kind] || []).some(row => row.id === item.id) ? previous[kind].map(row => row.id === item.id ? item : row) : [...(previous[kind] || []), item] }));
@@ -925,6 +941,13 @@ function TripWorkspace({ trip, trips, selectTrip, openAddTrip, uid, email, onTri
     {editingTrip && <TripSettingsDialog trip={{...trip,participants:ledger.people,currentUid:uid,currentEmail:email}} onClose={() => setEditingTrip(false)} busy={false} onSave={saveTrip} onDelete={deleteTrip}/>}
     {editingOverview && <DashboardItemEditor type={editingOverview.kind} item={editingOverview.item} onClose={() => setEditingOverview(null)} onSave={item => updateOverviewItem(editingOverview.kind === 'flight' ? 'flights' : 'hotels', item)}/>}
   </div>;
+}
+
+function isSharedTrip(trip, uid, email) {
+  const ownerEmail = (trip.ownerEmail || (trip.ownerUid === uid ? email : '') || '').toLowerCase();
+  return trip.ownerUid !== uid
+    || (trip.memberUids || []).some(member => member !== trip.ownerUid)
+    || (trip.memberEmails || []).some(member => member.toLowerCase() !== ownerEmail);
 }
 
 function makeTripDays(start, end) {

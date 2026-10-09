@@ -185,8 +185,19 @@ body { background: #fff4f7; }
 .hero button { color: #46366f; background: #e4d8f7; border-color: #d1bfed; box-shadow: 0 4px 14px #1c18352b; }
 .sidebar-label { margin-top: 28px; }
 .trip-picker { margin-top: 32px; display: grid; gap: 10px; }
-.trip-picker label { display: grid; gap: 8px; font-size: 13px; font-weight: 600; color: #586278; }
-.trip-picker select { width: 100%; min-width: 0; border: 1px solid #d9dbea; background: #fffffff0; border-radius: 10px; padding: 12px 10px; color: #252b3d; font-size: 16px; }
+.trip-picker > label { display: grid; gap: 8px; font-size: 13px; font-weight: 600; color: #586278; }
+.trip-picker-menu { position: relative; min-width: 0; }
+.trip-picker-menu > summary { min-height: 46px; box-sizing: border-box; display: flex; align-items: center; gap: 9px; padding: 9px 34px 9px 11px; border: 1px solid #d9dbea; border-radius: 10px; background: #fffffff0; color: #252b3d; font-size: 15px; font-weight: 600; cursor: pointer; list-style: none; }
+.trip-picker-menu > summary::-webkit-details-marker { display: none; }
+.trip-picker-menu > summary::after { content: '⌄'; position: absolute; right: 12px; top: 9px; color: #737b8e; font-size: 18px; }
+.trip-picker-current-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.trip-owner-badge { flex: 0 0 auto; padding: 3px 8px; border-radius: 999px; font-size: 11px; line-height: 1.35; font-weight: 700; }
+.trip-owner-badge.is-mine { background: #efebf8; color: #65528f; }
+.trip-owner-badge.is-shared { background: #e7f3f1; color: #287367; }
+.trip-picker-options { position: absolute; z-index: 30; top: calc(100% + 6px); left: 0; right: 0; display: grid; gap: 3px; max-height: min(50vh, 320px); overflow: auto; padding: 5px; border: 1px solid #deddeb; border-radius: 12px; background: #fff; box-shadow: 0 12px 30px #252b3d24; }
+.trip-picker-options > button { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-width: 0; padding: 10px; border: 0; border-radius: 8px; background: transparent; color: #30374b; text-align: left; cursor: pointer; }
+.trip-picker-options > button:hover, .trip-picker-options > button[aria-current="true"] { background: #f4f1f9; }
+.trip-picker-options > button > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .trip-picker > button { min-height: 42px; background: #f0eafa; border: 1px solid #d8cdec; border-radius: 10px; color: #514276; font-size: 14px; font-weight: 600; }
 .mobile-trip-picker { display: none; }
 .add-trip-dialog { margin: auto; width: min(440px, calc(100% - 32px)); max-height: calc(100dvh - 32px); overflow-y: auto; padding: 28px; border: 1px solid #fff; border-radius: 20px; background: #fffafb; color: #252b3d; box-shadow: 0 20px 70px #18203540; }
@@ -209,6 +220,9 @@ body { background: #fff4f7; }
 @media (max-width: 850px) {
   .mobile-trip-picker { display: block; }
   .mobile-trip-picker .trip-picker { margin-top: 20px; grid-template-columns: minmax(0, 1fr) auto; align-items: end; }
+  .mobile-trip-picker .trip-picker > label { grid-column: 1 / -1; }
+  .mobile-trip-picker .trip-picker-menu { grid-column: 1; }
+  .mobile-trip-picker .trip-picker > button { grid-column: 2; }
   .mobile-trip-picker .trip-picker > button { min-height: 50px; padding: 10px 16px; }
 }
 .empty-day { position: relative; background: #fff; color: #586278; padding: 24px; border-radius: 12px; font-size: 15px; }
