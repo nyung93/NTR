@@ -7,7 +7,7 @@
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
     "preview": "vite preview --host 0.0.0.0",
-    "test": "node --test src/budget/model.test.js"
+    "test": "node --experimental-test-module-mocks --test src/budget/model.test.js src/tripStore.test.js"
   },
   "dependencies": {
     "firebase": "^12.19.0",

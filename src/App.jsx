@@ -3,7 +3,8 @@ import { TripSettingsDialog, DashboardItemEditor } from './TripEditors';
 import { useSyncedState } from './useSyncedState';
 import { useTripDocument } from './useTripDocument';
 import { useAccountTrips, createTrip } from './useAccountTrips';
-import { collection, deleteDoc, doc, getDocs, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { doc, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { deleteAccountTrip } from './tripStore';
 import { db } from './firebase';
 import { initialLedger } from './budget/model';
 import React, { useState, useEffect, useRef } from 'react';
@@ -844,22 +845,30 @@ const MassageView = ({ schedule, setSchedule }) => {
 
 function TripWorkspace({ trip, trips, selectTrip, openAddTrip, uid, email, onTripDelete }) {
   const [activeTab, setActiveTab] = useState('home');
+  const [deleting, setDeleting] = useState(false);
+  const syncPaused = useRef(false);
   const isNhaTrang = trip.legacyId === 'nha-trang' || trip.name === '나트랑';
-  const [massageSchedule, setMassageSchedule, spaSync, spaError] = useTripDocument({ uid, tripId: trip.id, section: 'spa', initialValue: {}, legacyId: trip.legacyId, legacyKeys: [isNhaTrang ? 'ntr-spa-v1' : `trip-${trip.legacyId || trip.id}-spa-v1`] });
-  const [itinerary, setItinerary, itinerarySync, itineraryError] = useTripDocument({ uid, tripId: trip.id, section: 'itinerary', initialValue: isNhaTrang ? initialItinerary : {}, legacyId: trip.legacyId, legacyKeys: [isNhaTrang ? 'ntr-itinerary-v2' : `trip-${trip.legacyId || trip.id}-itinerary-v1`] });
+  const [massageSchedule, setMassageSchedule, spaSync, spaError] = useTripDocument({ uid, tripId: trip.id, paused: deleting, pauseRef: syncPaused, section: 'spa', initialValue: {}, legacyId: trip.legacyId, legacyKeys: [isNhaTrang ? 'ntr-spa-v1' : `trip-${trip.legacyId || trip.id}-spa-v1`] });
+  const [itinerary, setItinerary, itinerarySync, itineraryError] = useTripDocument({ uid, tripId: trip.id, paused: deleting, pauseRef: syncPaused, section: 'itinerary', initialValue: isNhaTrang ? initialItinerary : {}, legacyId: trip.legacyId, legacyKeys: [isNhaTrang ? 'ntr-itinerary-v2' : `trip-${trip.legacyId || trip.id}-itinerary-v1`] });
   const isOwner = trip.ownerUid === uid;
-  const [overview, setOverview, overviewSync, overviewError] = useTripDocument({ uid, tripId: trip.id, section: 'overview', canWrite: isOwner, initialValue: isNhaTrang ? { flights: tripData.flights.map((item, index) => ({ ...item, id: item.id || `flight-${index}` })), hotels: tripData.hotels.map((item, index) => ({ ...item, id: item.id || `hotel-${index}` })) } : { flights: [], hotels: [] }, legacyId: trip.legacyId });
-  const [ledger, setLedger, budgetSync, budgetError] = useTripDocument({ uid, tripId: trip.id, section: 'budget', initialValue: initialLedger(isNhaTrang), legacyId: trip.legacyId, legacyKeys: [`trip-${trip.legacyId || trip.id}-budget-v1`] });
+  const [overview, setOverview, overviewSync, overviewError] = useTripDocument({ uid, tripId: trip.id, paused: deleting, pauseRef: syncPaused, section: 'overview', canWrite: isOwner, initialValue: isNhaTrang ? { flights: tripData.flights.map((item, index) => ({ ...item, id: item.id || `flight-${index}` })), hotels: tripData.hotels.map((item, index) => ({ ...item, id: item.id || `hotel-${index}` })) } : { flights: [], hotels: [] }, legacyId: trip.legacyId });
+  const [ledger, setLedger, budgetSync, budgetError] = useTripDocument({ uid, tripId: trip.id, paused: deleting, pauseRef: syncPaused, section: 'budget', initialValue: initialLedger(isNhaTrang), legacyId: trip.legacyId, legacyKeys: [`trip-${trip.legacyId || trip.id}-budget-v1`] });
   const [editingTrip, setEditingTrip] = useState(false);
   const [editingOverview, setEditingOverview] = useState(null);
   const days = isNhaTrang ? defaultTripDays : makeTripDays(trip.start, trip.end);
   const dateLabel = `${trip.start.replaceAll('-', '.')} — ${trip.end.replaceAll('-', '.')}`;
   const duration = `${days.length - 1}박 ${days.length}일`;
+  if (deleting) return <main className="auth-screen"><section className="auth-card"><h1>여행 삭제 중…</h1><p>잠시만 기다려 주세요.</p></section></main>;
   if ([itinerarySync, spaSync, overviewSync, budgetSync].some(status => status !== 'ready')) {
     const syncProblem = itineraryError || spaError || overviewError || budgetError;
     return <main className="auth-screen"><section className="auth-card"><h1>{syncProblem ? '여행 데이터 동기화 오류' : '여행 데이터 불러오는 중…'}</h1><p>{syncProblem || '잠시만 기다려 주세요.'}</p></section></main>;
   }
-  const tripPicker = <div className="trip-picker"><label>여행지 선택<select value={trip.id} onChange={e => selectTrip(e.target.value)}>{trips.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}</select></label><button type="button" onClick={openAddTrip}>+ 여행 추가</button></div>;
+  const tripPicker = <div className="trip-picker"><label>여행지 선택<select value={trip.id} onChange={e => selectTrip(e.target.value)}>{trips.map(t => {
+    const ownerEmail = (t.ownerEmail || (t.ownerUid === uid ? email : '') || '').toLowerCase();
+    const shared = t.ownerUid !== uid || (t.memberUids || []).some(member => member !== t.ownerUid)
+      || (t.memberEmails || []).some(member => member.toLowerCase() !== ownerEmail);
+    return <option key={t.id} value={t.id}>{t.name} · {shared ? '공유 여행' : '내 여행'}</option>;
+  })}</select></label><button type="button" onClick={openAddTrip}>+ 여행 추가</button></div>;
   const tabs = [{id:'home', title:'여행 한눈에', icon:Home}, {id:'itinerary', title:'여행 일정', icon:CalendarDays}, {id:'budget', title:'예산·정산', icon:Wallet}, ...(isNhaTrang ? [{id:'massage', title:'스파 플래너', icon:Sparkles}] : [])];
   const navigation = tabs.map(({id,title,icon:Icon}) => <button key={id} aria-current={activeTab === id ? 'page' : undefined} onClick={() => { setActiveTab(id); window.scrollTo({ top: 0, behavior: 'instant' }); }} className={'nav-button ' + (activeTab === id ? 'selected' : '')}><Icon size={20}/><span>{title}</span>{activeTab === id && <ChevronRight size={16} className="nav-arrow"/>}</button>);
   const updateOverviewItem = (kind, item) => setOverview(previous => ({ ...previous, [kind]: (previous[kind] || []).some(row => row.id === item.id) ? previous[kind].map(row => row.id === item.id ? item : row) : [...(previous[kind] || []), item] }));
@@ -875,16 +884,30 @@ function TripWorkspace({ trip, trips, selectTrip, openAddTrip, uid, email, onTri
     setLedger(previous => ({ ...previous, people: fields.participants }));
   };
   const deleteTrip = async () => {
-    if (!window.confirm(trip.name + ' 여행과 저장된 일정·예산을 삭제할까요? 이 작업은 되돌릴 수 없습니다.')) return;
+    if (syncPaused.current || !isOwner) return;
+    const sharedEmails = (trip.memberEmails || []).filter(member => member.toLowerCase() !== email?.toLowerCase());
+    const sharedUids = (trip.memberUids || []).filter(member => member !== uid);
+    const sharing = sharedEmails.length || sharedUids.length
+      ? `공유 중인 여행입니다 (${sharedEmails.join(', ') || '다른 계정'}). 공유 상대의 목록에서도 삭제됩니다.`
+      : '내 계정만 사용하는 여행입니다.';
+    if (!window.confirm(`${trip.name} (${dateLabel})\n${sharing}\n선택한 여행과 일정·예산을 삭제할까요? 이 작업은 되돌릴 수 없습니다.`)) return;
+    syncPaused.current = true;
+    setDeleting(true);
     try {
-      const sections = await getDocs(collection(db, 'trips', trip.id, 'planner'));
-      await Promise.all(sections.docs.map(section => deleteDoc(section.ref)));
-      await deleteDoc(doc(db, 'trips', trip.id));
-      await onTripDelete(trip.id);
-    } catch {
-      window.alert('여행을 삭제하지 못했습니다. 연결 상태와 Firestore 규칙을 확인한 뒤 다시 시도해 주세요.');
+      await deleteAccountTrip(db, uid, trip);
+    } catch (error) {
+      syncPaused.current = false;
+      setDeleting(false);
+      window.alert(error.code === 'permission-denied'
+        ? '여행 삭제 권한이 거부됐습니다. 여행을 만든 계정인지, Firestore에 현재 프로젝트의 규칙이 게시되어 있는지 확인해 주세요. (permission-denied)'
+        : error.code === 'unavailable'
+          ? '연결이 끊겨 삭제하지 못했습니다. 인터넷 연결 후 다시 시도해 주세요.'
+          : error.message || '여행을 삭제하지 못했습니다. 다시 시도해 주세요.');
+      return;
     }
+    await onTripDelete(trip.id);
   };
+
   const commonOverview = <>
     {isNhaTrang ? <section className="hero"><div className="hero-shade"/><div className="hero-content"><span className="hero-label"><MapPin size={14}/> VIETNAM, NHA TRANG</span><h2>{trip.name} · {duration}</h2><p>{trip.purpose || '휴식 · 호캉스'}</p><button onClick={() => setActiveTab('itinerary')}>일정 보기 <ChevronRight size={17}/></button></div></section> : <section className="new-trip-overview"><MapPin size={32}/><h2>{trip.name}</h2><p>{dateLabel} · {duration}</p><button className="primary-action" onClick={() => setActiveTab('itinerary')}>일정 보기 <ChevronRight size={17}/></button></section>}
     <section className="trip-stats"><div><CalendarDays/><span>여행 기간<strong>{duration}</strong></span></div><div><Luggage/><span>여행 인원<strong>{ledger.people.length}명 · {ledger.people.map(person => person.name).join(', ')}</strong></span></div><div><Building2/><span>숙소<strong>{overview.hotels.length ? overview.hotels.map(hotel => hotel.name).join(' · ') : '숙소를 추가하세요'}</strong></span></div><div><Users/><span>함께하는 계정<strong>{trip.memberEmails?.length || trip.memberUids?.length || 1}개</strong></span></div></section>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { collection, doc, getDoc, onSnapshot, query, serverTimestamp, setDoc, where } from 'firebase/firestore';
 import { db } from './firebase';
+import { migrateLegacyTrip } from './tripStore';
 
 async function migrateAccountTrips(uid, email) {
   const oldTripsRef = doc(db, 'users', uid, 'planner', 'trips');
@@ -14,37 +15,9 @@ async function migrateAccountTrips(uid, email) {
     } catch { /* a new account starts with an empty trip list */ }
   }
 
+  const migratedTrips = [];
   for (const oldTrip of oldTrips) {
-    const tripId = `${uid}_${oldTrip.id}`;
-    const tripRef = doc(db, 'trips', tripId);
-    const currentTrip = await getDoc(tripRef);
-    if (!currentTrip.exists()) {
-      await setDoc(tripRef, {
-        name: oldTrip.name,
-        start: oldTrip.start,
-        end: oldTrip.end,
-        ownerUid: uid,
-        ownerEmail: email || '',
-        memberUids: [uid],
-        memberEmails: email ? [email.toLowerCase()] : [],
-        editorUids: [],
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        migratedFromLegacy: true,
-        legacyId: oldTrip.id,
-      });
-    }
-
-    for (const section of ['itinerary', 'spa', 'budget']) {
-      const oldSectionRef = doc(db, 'users', uid, 'planner', `${oldTrip.id}-${section}`);
-      const oldSection = await getDoc(oldSectionRef);
-      if (!oldSection.exists() || !Object.hasOwn(oldSection.data(), 'value')) continue;
-      const sectionRef = doc(db, 'trips', tripId, 'planner', section);
-      const existingSection = await getDoc(sectionRef);
-      if (!existingSection.exists()) {
-        await setDoc(sectionRef, { value: oldSection.data().value, updatedAt: serverTimestamp(), updatedBy: uid });
-      }
-    }
+    if (await migrateLegacyTrip(db, uid, email, oldTrip)) migratedTrips.push(oldTrip);
   }
 
   const selectedRef = doc(db, 'users', uid, 'planner', 'selected-trip');
@@ -52,7 +25,8 @@ async function migrateAccountTrips(uid, email) {
   let localSelection = '';
   try { localSelection = localStorage.getItem('travel-planner-selected-v1') || ''; } catch { /* optional browser preference */ }
   const selectedLegacyId = selected.exists() ? selected.data().value : localSelection;
-  const selectedTrip = oldTrips.find(trip => trip.id === selectedLegacyId) || oldTrips[0];
+  const selectedTrip = migratedTrips.find(trip => trip.id === selectedLegacyId)
+    || (!selected.exists() ? migratedTrips[0] : null);
   const nextSelected = selectedTrip ? `${uid}_${selectedTrip.id}` : '';
   if (selectedTrip && (!selected.exists() || selectedLegacyId !== nextSelected)) {
     await setDoc(selectedRef, { value: nextSelected, updatedAt: serverTimestamp() });

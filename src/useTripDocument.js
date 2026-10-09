@@ -12,7 +12,7 @@ function readStored(keys, fallback) {
   return fallback;
 }
 
-export function useTripDocument({ uid, tripId, section, initialValue, legacyKeys = [], legacyId = '', canWrite = true }) {
+export function useTripDocument({ uid, tripId, section, initialValue, legacyKeys = [], legacyId = '', canWrite = true, paused = false, pauseRef }) {
   const accountKey = `planner:${uid}:${tripId}:${section}`;
   const oldCloudKey = legacyId ? `${legacyId}-${section}` : '';
   const [value, setValue] = useState(() => readStored([accountKey, ...legacyKeys], initialValue));
@@ -26,12 +26,14 @@ export function useTripDocument({ uid, tripId, section, initialValue, legacyKeys
   }, [accountKey, value]);
 
   useEffect(() => {
-    if (!uid || !tripId) return undefined;
+    if (!uid || !tripId || paused) return undefined;
+    let active = true;
     const reference = doc(db, 'trips', tripId, 'planner', section);
     ready.current = false;
     setStatus('loading');
     setError('');
     const unsubscribe = onSnapshot(reference, async snapshot => {
+      if (!active || pauseRef?.current) return;
       try {
         if (snapshot.exists() && Object.hasOwn(snapshot.data(), 'value')) {
           const remoteValue = snapshot.data().value;
@@ -42,16 +44,19 @@ export function useTripDocument({ uid, tripId, section, initialValue, legacyKeys
           try { localStorage.setItem(accountKey, remoteJson); } catch { /* offline cache is optional */ }
         } else {
           const legacySnapshot = oldCloudKey ? await getDoc(doc(db, 'users', uid, 'planner', oldCloudKey)) : null;
+          if (!active || pauseRef?.current) return;
           const seed = legacySnapshot?.exists() && Object.hasOwn(legacySnapshot.data(), 'value')
             ? legacySnapshot.data().value : readStored([accountKey, ...legacyKeys], initialValue);
           if (canWrite) await setDoc(reference, { value: seed, updatedAt: serverTimestamp(), updatedBy: uid });
           serialized.current = JSON.stringify(seed);
           if (JSON.stringify(seed) !== JSON.stringify(value)) setValue(seed);
         }
+        if (!active || pauseRef?.current) return;
         ready.current = true;
         setStatus('ready');
         setError('');
       } catch (syncError) {
+        if (!active || pauseRef?.current) return;
         ready.current = true;
         setStatus('error');
         setError(syncError.code === 'permission-denied'
@@ -59,21 +64,23 @@ export function useTripDocument({ uid, tripId, section, initialValue, legacyKeys
           : '여행 데이터를 Firebase에서 불러오지 못했습니다.');
       }
     }, syncError => {
+      if (!active || pauseRef?.current) return;
       ready.current = true;
       setStatus('error');
       setError(syncError.code === 'permission-denied'
         ? '이 여행을 수정할 권한이 없습니다. 소유자에게 편집 권한을 요청하세요.'
         : '여행 데이터를 Firebase에서 불러오지 못했습니다.');
     });
-    return () => { ready.current = false; unsubscribe(); };
-  }, [uid, tripId, section, accountKey, oldCloudKey, canWrite]);
+    return () => { active = false; ready.current = false; unsubscribe(); };
+  }, [uid, tripId, section, accountKey, oldCloudKey, canWrite, paused, pauseRef]);
 
   useEffect(() => {
-    if (!ready.current || status === 'error' || !canWrite) return undefined;
+    if (!ready.current || status === 'error' || !canWrite || paused || pauseRef?.current) return undefined;
     const next = JSON.stringify(value);
     if (next === serialized.current) return undefined;
     const reference = doc(db, 'trips', tripId, 'planner', section);
     const timer = setTimeout(async () => {
+      if (pauseRef?.current) return;
       try {
         await setDoc(reference, { value, updatedAt: serverTimestamp(), updatedBy: uid });
         serialized.current = next;
@@ -87,7 +94,7 @@ export function useTripDocument({ uid, tripId, section, initialValue, legacyKeys
       }
     }, 350);
     return () => clearTimeout(timer);
-  }, [uid, tripId, section, status, value, canWrite]);
+  }, [uid, tripId, section, status, value, canWrite, paused, pauseRef]);
 
   return [value, setValue, status, error];
 }
