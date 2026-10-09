@@ -81,45 +81,39 @@ export function useAccountTrips(user) {
       if (!active) return;
       const tripsCollection = collection(db, 'trips');
       const memberQuery = query(tripsCollection, where('memberUids', 'array-contains', uid));
+      const email = user?.email?.trim().toLowerCase();
+      const emailQuery = email ? query(tripsCollection, where('memberEmails', 'array-contains', email)) : null;
       const ownerQuery = query(tripsCollection, where('ownerUid', '==', uid));
-      let memberTrips = [];
-      let ownedTrips = [];
-      let memberState = 'loading';
-      let ownerState = 'loading';
-      let memberError = null;
-      let ownerError = null;
+      const streams = [
+        { key: 'member', query: memberQuery, docs: [], state: 'loading', error: null },
+        ...(emailQuery ? [{ key: 'email', query: emailQuery, docs: [], state: 'loading', error: null }] : []),
+        { key: 'owner', query: ownerQuery, docs: [], state: 'loading', error: null },
+      ];
       const publishTrips = () => {
-        const availableTrips = [
-          ...(memberState === 'ready' ? memberTrips : []),
-          ...(ownerState === 'ready' ? ownedTrips : []),
-        ];
+        const availableTrips = streams.filter(stream => stream.state === 'ready').flatMap(stream => stream.docs);
         const uniqueTrips = new Map(availableTrips.map(item => [item.id, { id: item.id, ...item.data() }]));
         setTrips([...uniqueTrips.values()].sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)));
         setStatus('ready');
         setError('');
       };
-      const handleTripsError = (source, syncError) => {
-        if (source === 'member') {
-          memberState = 'error';
-          memberError = syncError;
-        } else {
-          ownerState = 'error';
-          ownerError = syncError;
-        }
-        if (memberState === 'ready' || ownerState === 'ready') {
+      const handleTripsError = (stream, syncError) => {
+        stream.state = 'error';
+        stream.error = syncError;
+        if (streams.some(item => item.state === 'ready')) {
           publishTrips();
           return;
         }
-        if (memberState === 'error' && ownerState === 'error') {
+        if (streams.every(item => item.state === 'error')) {
           setStatus('error');
-          setError(memberError.code === 'permission-denied' && ownerError.code === 'permission-denied'
-            ? `여행 목록 읽기가 두 경로에서 모두 거부됐습니다. 현재 로그인 UID ${uid}가 여행 문서의 ownerUid 또는 memberUids에 있는지 확인해 주세요.`
+          setError(streams.every(item => item.error?.code === 'permission-denied')
+            ? `여행 목록 읽기가 거부됐습니다. 현재 로그인 이메일 ${email || '(없음)'}이 memberEmails에 등록됐거나, 현재 계정이 여행 소유자인지 확인해 주세요.`
             : 'Firebase에서 여행 목록을 불러오지 못했습니다. 연결 상태를 확인해 주세요.');
         }
       };
-      const stopMemberTrips = onSnapshot(memberQuery, snapshot => { memberTrips = snapshot.docs; memberState = 'ready'; publishTrips(); }, error => handleTripsError('member', error));
-      const stopOwnedTrips = onSnapshot(ownerQuery, snapshot => { ownedTrips = snapshot.docs; ownerState = 'ready'; publishTrips(); }, error => handleTripsError('owner', error));
-      unsubscribe = () => { stopMemberTrips(); stopOwnedTrips(); };
+      const stops = streams.map(stream => onSnapshot(stream.query,
+        snapshot => { stream.docs = snapshot.docs; stream.state = 'ready'; publishTrips(); },
+        error => handleTripsError(stream, error)));
+      unsubscribe = () => stops.forEach(stop => stop());
     }).catch(syncError => {
       if (!active) return;
       setStatus('error');

@@ -9,13 +9,15 @@ service cloud.firestore {
       return signedIn() && (
         request.auth.uid == tripData(tripId).ownerUid
         || request.auth.uid in tripData(tripId).get('memberUids', [])
+        || (request.auth.token.email != null
+          && request.auth.token.email.lower() in tripData(tripId).get('memberEmails', []))
       );
     }
     function isTripOwner(tripId) {
       return signedIn() && request.auth.uid == tripData(tripId).ownerUid;
     }
 
-    // Only explicitly listed Firebase Authentication UIDs can read a trip.
+    // Trip owners and explicitly listed account UIDs or login emails can read a trip.
     match /trips/{tripId} {
       allow create: if signedIn()
         && request.resource.data.ownerUid == request.auth.uid
@@ -25,18 +27,24 @@ service cloud.firestore {
         !exists(/databases/$(database)/documents/trips/$(tripId))
         || request.auth.uid == resource.data.ownerUid
         || (resource.data.keys().hasAny(['memberUids']) && request.auth.uid in resource.data.memberUids)
+        || (request.auth.token.email != null
+          && resource.data.keys().hasAny(['memberEmails'])
+          && request.auth.token.email.lower() in resource.data.memberEmails)
       );
-      // Keep each list branch directly provable by its matching Firestore query:
-      // ownerUid == uid, or memberUids array-contains uid.
+      // Keep each list branch directly provable by its matching Firestore query.
       allow list: if signedIn() && request.auth.uid == resource.data.ownerUid;
       allow list: if signedIn() && request.auth.uid in resource.data.memberUids;
+      allow list: if signedIn() && request.auth.token.email != null
+        && request.auth.token.email.lower() in resource.data.memberEmails;
       allow update: if signedIn()
         && request.auth.uid == resource.data.ownerUid
         && request.resource.data.ownerUid == resource.data.ownerUid
         && request.resource.data.memberUids is list
+        && request.resource.data.memberEmails is list
         && request.resource.data.memberUids.size() <= 20
+        && request.resource.data.memberEmails.size() <= 20
         && request.resource.data.ownerUid in request.resource.data.memberUids
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'start', 'end', 'purpose', 'participants', 'memberUids', 'updatedAt']);
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'start', 'end', 'purpose', 'participants', 'memberUids', 'memberEmails', 'updatedAt']);
       allow delete: if signedIn() && request.auth.uid == resource.data.ownerUid;
 
       match /planner/{sectionId} {
