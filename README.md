@@ -1,4 +1,4 @@
-# somewhere. — 나트랑 여행 플래너
+# Nyung Trip-Plan — 여행 플래너
 
 첨부 여행 플래너를 바탕으로 만든 React + Vite 애플리케이션입니다.
 

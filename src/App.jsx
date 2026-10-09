@@ -41,7 +41,7 @@ import {
 } from 'lucide-react';
 
 export const tripData = {
-  title: "나트랑 여행 계획",
+  title: "Nyung Trip-Plan",
   dates: "2027.03.04 - 03.09",
   passengers: "일반석 2석",
   flights: [
@@ -892,10 +892,10 @@ function TripWorkspace({ trip, trips, selectTrip, openAddTrip, uid, email, onTri
     {isNhaTrang && <section className="spa-banner"><div className="spa-banner-icon"><Sparkles size={28}/></div><div><span className="eyebrow">SPA</span><h3>리조트 스파</h3><p>날짜별 프로그램과 이용 횟수를 확인하세요.</p></div><button onClick={() => setActiveTab('massage')}>스파 계획하기 <ChevronRight size={16}/></button></section>}
   </>;
   return <div className="app-shell">
-    <aside className="sidebar"><a href="#" className="brand" onClick={() => setActiveTab('home')}><span className="brand-icon"><Navigation size={22}/></span> somewhere<span className="brand-dot">.</span></a>{tripPicker}<p className="sidebar-label">여행 메뉴</p><nav aria-label="주 메뉴">{navigation}</nav></aside>
+    <aside className="sidebar"><a href="#" className="brand" onClick={() => setActiveTab('home')}><span className="brand-icon"><Navigation size={22}/></span> Nyung Trip-Plan</a>{tripPicker}<p className="sidebar-label">여행 메뉴</p><nav aria-label="주 메뉴">{navigation}</nav></aside>
     <main className="workspace"><header className="topbar"><span>나의 여행 <ChevronRight size={14}/> <strong>{trip.name}</strong></span><div className="trip-top-actions"><button onClick={() => setEditingTrip(true)}>여행 정보</button></div></header><div className="mobile-trip-picker">{tripPicker}</div>
       {(itineraryError || spaError || overviewError || budgetError) ? <p className="cloud-sync-status error" role="alert">{itineraryError || spaError || overviewError || budgetError}</p> : <p className="cloud-sync-status">Firebase에 저장됨 · 내 계정과 등록된 이메일 사용자만 확인 가능</p>}
-      <section className="page-intro"><div className="page-title"><h1>{activeTab === 'home' ? `${trip.name} 여행 계획` : activeTab === 'itinerary' ? '여행 일정' : activeTab === 'budget' ? '예산·정산' : '스파 계획'}</h1></div><span className="trip-badge"><CalendarDays size={16}/> {dateLabel}</span></section>
+      <section className="page-intro"><div className="page-title"><h1>{activeTab === 'home' ? 'Nyung Trip-Plan' : activeTab === 'itinerary' ? '여행 일정' : activeTab === 'budget' ? '예산·정산' : '스파 계획'}</h1></div><span className="trip-badge"><CalendarDays size={16}/> {dateLabel}</span></section>
       {activeTab === 'home' ? commonOverview : <section className="detail-panel">{activeTab === 'itinerary' ? <ItineraryView days={days} itinerary={itinerary} setItinerary={setItinerary} massageSchedule={massageSchedule}/> : activeTab === 'budget' ? <BudgetView trip={trip} ledger={ledger} setLedger={setLedger} syncStatus={budgetSync} syncError={budgetError}/> : <MassageView schedule={massageSchedule} setSchedule={setMassageSchedule}/>}</section>}
       <footer className="page-footer"><span>{trip.name} 여행 계획</span><span>{dateLabel}</span></footer>
     </main><nav className="mobile-nav" style={{gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))`}} aria-label="모바일 메뉴">{navigation}</nav>
