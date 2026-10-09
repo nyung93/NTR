@@ -189,3 +189,5 @@ body { font-size: 16px; line-height: 1.6; }
 }
  .cloud-sync-status{margin:2px 0 12px;text-align:right;color:#777987;font-size:12px}
  .cloud-sync-status.error{color:#a34d54}
+
+.brand-logo{width:40px;height:40px;flex:0 0 40px;object-fit:contain;border-radius:10px}
