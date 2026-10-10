@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, signOut } from 'firebase/auth';
+import { onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from './firebase';
 import './auth.css';
 
@@ -11,7 +11,7 @@ export default function AuthGate({ children }) {
   }), []);
   if (session === undefined) return <main className="auth-screen"><p>Firebase 연결 확인 중…</p></main>;
   if (!session) return <SignIn />;
-  return <>{children(session)}<button className="auth-signout" onClick={() => signOut(auth)}>로그아웃</button></>;
+  return children(session);
 }
 
 function SignIn() {

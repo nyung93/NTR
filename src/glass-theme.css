@@ -46,11 +46,23 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .sidebar-note { background: linear-gradient(145deg, #edf3fc, #efebf8 60%, #f8edf2); border: 1px solid #fff; border-radius: 18px; color: #39425a; }
 .sidebar-note h3 { font-size: 16px; }
 .sidebar-note p, .sidebar-note > span { color: #566079; }
-.topbar { border-color: #dde1ed; color: var(--muted); }
+.topbar { height: auto; min-height: 88px; box-sizing: border-box; padding: 16px 0; flex-wrap: wrap; gap: 12px 20px; border-color: #dde1ed; color: var(--muted); }
+.topbar > span { flex: 1 1 160px; min-width: 0; }
+.topbar > span > svg { flex-shrink: 0; }
+.topbar > span > strong { min-width: 0; overflow-wrap: anywhere; }
 .topbar strong { color: var(--ink); }
-.trip-top-actions { display: flex; align-items: center; gap: 8px; }
+.trip-top-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; max-width: 100%; }
+.trip-top-actions > button { flex-shrink: 0; white-space: nowrap; }
 .trip-top-actions button { min-height: 36px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 7px 11px; border: 1px solid #d9dbea; border-radius: 9px; background: #fff; color: #586278; font-size: 12px; }
 .trip-top-actions button:first-child { border-color: #cbc3e4; background: #f4f1fb; color: #564784; font-weight: 650; }
+@media (max-width: 850px) {
+  .topbar { min-height: 64px; }
+}
+@media (max-width: 600px) {
+  .topbar > span { flex-basis: 100%; }
+  .topbar .trip-top-actions { width: 100%; }
+  .topbar .trip-top-actions > button { flex: 1 1 auto; min-height: 40px; }
+}
 .avatar { background: #e6e1f6; color: #544789; border-color: #f4f5fa; }
 .avatar.second { background: #dae9f7; color: #385c7f; }
 .page-title h1 { color: var(--ink); letter-spacing: -.8px; }

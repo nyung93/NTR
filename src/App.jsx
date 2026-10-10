@@ -6,6 +6,7 @@ import { useAccountTrips, createTrip } from './useAccountTrips';
 import { doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { deleteAccountTrip } from './tripStore';
 import MyPage from './MyPage';
+import SignOutButton from './SignOutButton';
 import { db } from './firebase';
 import { initialLedger } from './budget/model';
 import React, { useState, useEffect, useRef } from 'react';
@@ -864,7 +865,7 @@ function TripWorkspace({ trip, trips, selectTrip, openAddTrip, user, uid, email,
   if (deleting) return <main className="auth-screen"><section className="auth-card"><h1>여행 삭제 중…</h1><p>잠시만 기다려 주세요.</p></section></main>;
   if ([itinerarySync, spaSync, overviewSync, budgetSync].some(status => status !== 'ready')) {
     const syncProblem = itineraryError || spaError || overviewError || budgetError;
-    return <main className="auth-screen"><section className="auth-card"><h1>{syncProblem ? '여행 데이터 동기화 오류' : '여행 데이터 불러오는 중…'}</h1><p>{syncProblem || '잠시만 기다려 주세요.'}</p></section></main>;
+    return <main className="auth-screen"><section className="auth-card"><h1>{syncProblem ? '여행 데이터 동기화 오류' : '여행 데이터 불러오는 중…'}</h1><p>{syncProblem || '잠시만 기다려 주세요.'}</p><div className="account-card-actions"><SignOutButton/></div></section></main>;
   }
   const tripPicker = <div className="trip-picker">
     <label>여행지 선택</label>
@@ -935,7 +936,7 @@ function TripWorkspace({ trip, trips, selectTrip, openAddTrip, user, uid, email,
   </>;
   return <div className="app-shell">
     <aside className="sidebar"><a href="#" className="brand" onClick={() => setActiveTab('home')}><img className="brand-logo" src="/images/nyung-logo.png" alt=""/> Nyung Trip-Plan</a>{tripPicker}<p className="sidebar-label">여행 메뉴</p><nav aria-label="주 메뉴">{navigation}</nav></aside>
-    <main className="workspace"><header className="topbar"><span>나의 여행 <ChevronRight size={14}/> <strong>{trip.name}</strong></span><div className="trip-top-actions"><button onClick={() => setShowMyPage(true)}><UserRound size={15}/> 마이페이지</button><button onClick={() => setEditingTrip(true)}>여행 정보</button></div></header><div className="mobile-trip-picker">{tripPicker}</div>
+    <main className="workspace"><header className="topbar"><span>나의 여행 <ChevronRight size={14}/> <strong>{trip.name}</strong></span><div className="trip-top-actions"><button onClick={() => setShowMyPage(true)}><UserRound size={15}/> 마이페이지</button><button onClick={() => setEditingTrip(true)}>여행 정보</button><SignOutButton/></div></header><div className="mobile-trip-picker">{tripPicker}</div>
       {(itineraryError || spaError || overviewError || budgetError) ? <p className="cloud-sync-status error" role="alert">{itineraryError || spaError || overviewError || budgetError}</p> : <p className="cloud-sync-status">Firebase에 저장됨 · 내 계정과 등록된 이메일 사용자만 확인 가능</p>}
       <section className="page-intro"><div className="page-title"><h1>{activeTab === 'home' ? 'Nyung Trip-Plan' : activeTab === 'itinerary' ? '여행 일정' : activeTab === 'budget' ? '예산·정산' : '스파 계획'}</h1></div><span className="trip-badge"><CalendarDays size={16}/> {dateLabel}</span></section>
       {activeTab === 'home' ? commonOverview : <section className="detail-panel">{activeTab === 'itinerary' ? <ItineraryView days={days} itinerary={itinerary} setItinerary={setItinerary} massageSchedule={massageSchedule}/> : activeTab === 'budget' ? <BudgetView trip={trip} ledger={ledger} setLedger={setLedger} syncStatus={budgetSync} syncError={budgetError}/> : <MassageView schedule={massageSchedule} setSchedule={setMassageSchedule}/>}</section>}
@@ -1007,7 +1008,7 @@ export default function App({ user, uid = user?.uid }) {
       setAddError(error.code === 'permission-denied' ? '여행을 만들 권한이 없습니다. Firestore 규칙을 확인해 주세요.' : '여행을 만들지 못했습니다. 네트워크를 확인해 주세요.');
     }
   };
-  if (tripsError || tripsStatus !== 'ready') return <main className="auth-screen"><section className="auth-card"><h1>{tripsError ? 'Firebase 연결 확인 필요' : '여행 데이터 불러오는 중…'}</h1><p>{tripsError || '잠시만 기다려 주세요.'}</p></section></main>;
-  if (!selected) return <main className="auth-screen"><section className="auth-card"><button className="auth-profile-link" onClick={() => setShowMyPage(true)}>마이페이지</button><span className="auth-kicker">YOUR TRIPS</span><h1>여행을 시작해 보세요</h1><p>첫 여행을 추가하면 일정과 예산을 이 계정에 저장합니다.</p><button className="auth-submit" onClick={() => setAdding(true)}>여행 추가</button>{adding && <AddTripDialog onClose={() => setAdding(false)} onAdd={addTrip}/>}</section>{showMyPage && <MyPage user={user} onClose={() => setShowMyPage(false)}/>}</main>;
+  if (tripsError || tripsStatus !== 'ready') return <main className="auth-screen"><section className="auth-card"><h1>{tripsError ? 'Firebase 연결 확인 필요' : '여행 데이터 불러오는 중…'}</h1><p>{tripsError || '잠시만 기다려 주세요.'}</p><div className="account-card-actions"><SignOutButton/></div></section></main>;
+  if (!selected) return <main className="auth-screen"><section className="auth-card"><div className="account-card-actions"><button className="auth-profile-link" onClick={() => setShowMyPage(true)}>마이페이지</button><SignOutButton/></div><span className="auth-kicker">YOUR TRIPS</span><h1>여행을 시작해 보세요</h1><p>첫 여행을 추가하면 일정과 예산을 이 계정에 저장합니다.</p><button className="auth-submit" onClick={() => setAdding(true)}>여행 추가</button>{adding && <AddTripDialog onClose={() => setAdding(false)} onAdd={addTrip}/>}</section>{showMyPage && <MyPage user={user} onClose={() => setShowMyPage(false)}/>}</main>;
   return <><TripWorkspace key={selected.id} trip={selected} trips={trips} user={user} uid={uid} email={user?.email || ''} selectTrip={id => { setSelectedId(id); window.scrollTo(0, 0); }} openAddTrip={() => setAdding(true)} onTripDelete={async deletedId => { const nextTrip = trips.find(trip => trip.id !== deletedId); if (nextTrip) setSelectedId(nextTrip.id); }}/>{addError && <p className="form-error" role="status">{addError}</p>}{adding && <AddTripDialog onClose={() => setAdding(false)} onAdd={addTrip}/>}</>;
 }
