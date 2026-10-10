@@ -11,4 +11,7 @@
 .auth-links{display:grid;gap:12px;margin-top:20px;text-align:center}
 .auth-links button{border:0;background:transparent;color:#79709f;font:inherit;font-size:13px;cursor:pointer}
 .auth-message{padding:10px 12px;border-radius:10px;background:#fff2f0;color:#a34d54;font-size:13px}
-.auth-signout{position:fixed;right:18px;top:16px;z-index:5;padding:8px 12px;border:1px solid #e7e1ec;border-radius:10px;background:rgba(255,255,255,.8);color:#686776;font:inherit;font-size:13px;cursor:pointer}
+.auth-message.is-success{background:#edf6f0;color:#39724e}
+.auth-reset-help{font-size:13px}
+.auth-account-actions{position:fixed;right:18px;top:16px;z-index:60;display:flex;gap:8px}
+.auth-my-page,.auth-signout{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 12px;border:1px solid #e7e1ec;border-radius:10px;background:rgba(255,255,255,.9);color:#686776;font:inherit;font-size:13px;cursor:pointer}

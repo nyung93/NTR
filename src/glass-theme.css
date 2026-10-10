@@ -48,6 +48,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .sidebar-note p, .sidebar-note > span { color: #566079; }
 .topbar { border-color: #dde1ed; color: var(--muted); }
 .topbar strong { color: var(--ink); }
+.trip-top-actions { display: flex; align-items: center; gap: 8px; }
+.trip-top-actions button { min-height: 36px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 7px 11px; border: 1px solid #d9dbea; border-radius: 9px; background: #fff; color: #586278; font-size: 12px; }
 .avatar { background: #e6e1f6; color: #544789; border-color: #f4f5fa; }
 .avatar.second { background: #dae9f7; color: #385c7f; }
 .page-title h1 { color: var(--ink); letter-spacing: -.8px; }
