@@ -5,6 +5,7 @@ import { useTripDocument } from './useTripDocument';
 import { useAccountTrips, createTrip } from './useAccountTrips';
 import { doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { deleteAccountTrip } from './tripStore';
+import MyPage from './MyPage';
 import { db } from './firebase';
 import { initialLedger } from './budget/model';
 import React, { useState, useEffect, useRef } from 'react';
@@ -39,6 +40,7 @@ import {
   Pencil,
   Trash2,
   Users,
+  UserRound,
 } from 'lucide-react';
 
 export const tripData = {
@@ -843,7 +845,7 @@ const MassageView = ({ schedule, setSchedule }) => {
 };
 
 
-function TripWorkspace({ trip, trips, selectTrip, openAddTrip, uid, email, onTripDelete }) {
+function TripWorkspace({ trip, trips, selectTrip, openAddTrip, user, uid, email, onTripDelete }) {
   const [activeTab, setActiveTab] = useState('home');
   const [deleting, setDeleting] = useState(false);
   const syncPaused = useRef(false);
@@ -855,6 +857,7 @@ function TripWorkspace({ trip, trips, selectTrip, openAddTrip, uid, email, onTri
   const [ledger, setLedger, budgetSync, budgetError] = useTripDocument({ uid, tripId: trip.id, paused: deleting, pauseRef: syncPaused, section: 'budget', initialValue: initialLedger(isNhaTrang), legacyId: trip.legacyId, legacyKeys: [`trip-${trip.legacyId || trip.id}-budget-v1`] });
   const [editingTrip, setEditingTrip] = useState(false);
   const [editingOverview, setEditingOverview] = useState(null);
+  const [showMyPage, setShowMyPage] = useState(false);
   const days = isNhaTrang ? defaultTripDays : makeTripDays(trip.start, trip.end);
   const dateLabel = `${trip.start.replaceAll('-', '.')} — ${trip.end.replaceAll('-', '.')}`;
   const duration = `${days.length - 1}박 ${days.length}일`;
@@ -932,13 +935,14 @@ function TripWorkspace({ trip, trips, selectTrip, openAddTrip, uid, email, onTri
   </>;
   return <div className="app-shell">
     <aside className="sidebar"><a href="#" className="brand" onClick={() => setActiveTab('home')}><img className="brand-logo" src="/images/nyung-logo.png" alt=""/> Nyung Trip-Plan</a>{tripPicker}<p className="sidebar-label">여행 메뉴</p><nav aria-label="주 메뉴">{navigation}</nav></aside>
-    <main className="workspace"><header className="topbar"><span>나의 여행 <ChevronRight size={14}/> <strong>{trip.name}</strong></span><div className="trip-top-actions"><button onClick={() => setEditingTrip(true)}>여행 정보</button></div></header><div className="mobile-trip-picker">{tripPicker}</div>
+    <main className="workspace"><header className="topbar"><span>나의 여행 <ChevronRight size={14}/> <strong>{trip.name}</strong></span><div className="trip-top-actions"><button onClick={() => setShowMyPage(true)}><UserRound size={15}/> 마이페이지</button><button onClick={() => setEditingTrip(true)}>여행 정보</button></div></header><div className="mobile-trip-picker">{tripPicker}</div>
       {(itineraryError || spaError || overviewError || budgetError) ? <p className="cloud-sync-status error" role="alert">{itineraryError || spaError || overviewError || budgetError}</p> : <p className="cloud-sync-status">Firebase에 저장됨 · 내 계정과 등록된 이메일 사용자만 확인 가능</p>}
       <section className="page-intro"><div className="page-title"><h1>{activeTab === 'home' ? 'Nyung Trip-Plan' : activeTab === 'itinerary' ? '여행 일정' : activeTab === 'budget' ? '예산·정산' : '스파 계획'}</h1></div><span className="trip-badge"><CalendarDays size={16}/> {dateLabel}</span></section>
       {activeTab === 'home' ? commonOverview : <section className="detail-panel">{activeTab === 'itinerary' ? <ItineraryView days={days} itinerary={itinerary} setItinerary={setItinerary} massageSchedule={massageSchedule}/> : activeTab === 'budget' ? <BudgetView trip={trip} ledger={ledger} setLedger={setLedger} syncStatus={budgetSync} syncError={budgetError}/> : <MassageView schedule={massageSchedule} setSchedule={setMassageSchedule}/>}</section>}
       <footer className="page-footer"><span>{trip.name} 여행 계획</span><span>{dateLabel}</span></footer>
     </main><nav className="mobile-nav" style={{gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))`}} aria-label="모바일 메뉴">{navigation}</nav>
     {editingTrip && <TripSettingsDialog trip={{...trip,participants:ledger.people,currentUid:uid,currentEmail:email}} onClose={() => setEditingTrip(false)} busy={false} onSave={saveTrip} onDelete={deleteTrip}/>}
+    {showMyPage && <MyPage user={user} onClose={() => setShowMyPage(false)}/>}
     {editingOverview && <DashboardItemEditor type={editingOverview.kind} item={editingOverview.item} onClose={() => setEditingOverview(null)} onSave={item => updateOverviewItem(editingOverview.kind === 'flight' ? 'flights' : 'hotels', item)}/>}
   </div>;
 }
@@ -990,6 +994,7 @@ export default function App({ user, uid = user?.uid }) {
   const [selectedId, setSelectedId] = useSyncedState('travel-planner-selected-v1', 'nha-trang', uid, 'selected-trip');
   const [adding, setAdding] = useState(false);
   const [addError, setAddError] = useState('');
+  const [showMyPage, setShowMyPage] = useState(false);
   const selected = trips.find(trip => trip.id === selectedId) || trips[0] || null;
   const addTrip = async trip => {
     try {
@@ -1003,6 +1008,6 @@ export default function App({ user, uid = user?.uid }) {
     }
   };
   if (tripsError || tripsStatus !== 'ready') return <main className="auth-screen"><section className="auth-card"><h1>{tripsError ? 'Firebase 연결 확인 필요' : '여행 데이터 불러오는 중…'}</h1><p>{tripsError || '잠시만 기다려 주세요.'}</p></section></main>;
-  if (!selected) return <main className="auth-screen"><section className="auth-card"><span className="auth-kicker">YOUR TRIPS</span><h1>여행을 시작해 보세요</h1><p>첫 여행을 추가하면 일정과 예산을 이 계정에 저장합니다.</p><button className="auth-submit" onClick={() => setAdding(true)}>여행 추가</button>{adding && <AddTripDialog onClose={() => setAdding(false)} onAdd={addTrip}/>}</section></main>;
-  return <><TripWorkspace key={selected.id} trip={selected} trips={trips} uid={uid} email={user?.email || ''} selectTrip={id => { setSelectedId(id); window.scrollTo(0, 0); }} openAddTrip={() => setAdding(true)} onTripDelete={async deletedId => { const nextTrip = trips.find(trip => trip.id !== deletedId); if (nextTrip) setSelectedId(nextTrip.id); }}/>{addError && <p className="form-error" role="status">{addError}</p>}{adding && <AddTripDialog onClose={() => setAdding(false)} onAdd={addTrip}/>}</>;
+  if (!selected) return <main className="auth-screen"><section className="auth-card"><button className="auth-profile-link" onClick={() => setShowMyPage(true)}>마이페이지</button><span className="auth-kicker">YOUR TRIPS</span><h1>여행을 시작해 보세요</h1><p>첫 여행을 추가하면 일정과 예산을 이 계정에 저장합니다.</p><button className="auth-submit" onClick={() => setAdding(true)}>여행 추가</button>{adding && <AddTripDialog onClose={() => setAdding(false)} onAdd={addTrip}/>}</section>{showMyPage && <MyPage user={user} onClose={() => setShowMyPage(false)}/>}</main>;
+  return <><TripWorkspace key={selected.id} trip={selected} trips={trips} user={user} uid={uid} email={user?.email || ''} selectTrip={id => { setSelectedId(id); window.scrollTo(0, 0); }} openAddTrip={() => setAdding(true)} onTripDelete={async deletedId => { const nextTrip = trips.find(trip => trip.id !== deletedId); if (nextTrip) setSelectedId(nextTrip.id); }}/>{addError && <p className="form-error" role="status">{addError}</p>}{adding && <AddTripDialog onClose={() => setAdding(false)} onAdd={addTrip}/>}</>;
 }

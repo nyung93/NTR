@@ -1,20 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, signOut } from 'firebase/auth';
 import { auth } from './firebase';
-import { UserRound } from 'lucide-react';
-import MyPage from './MyPage';
 import './auth.css';
 
 export default function AuthGate({ children }) {
   const [session, setSession] = useState(undefined);
-  const [showMyPage, setShowMyPage] = useState(false);
   useEffect(() => onAuthStateChanged(auth, async user => {
     if (!user) { setSession(null); return; }
     setSession(user);
   }), []);
   if (session === undefined) return <main className="auth-screen"><p>Firebase 연결 확인 중…</p></main>;
   if (!session) return <SignIn />;
-  return <>{children(session)}<div className="auth-account-actions"><button className="auth-my-page" onClick={() => setShowMyPage(true)}><UserRound size={15}/> 마이페이지</button><button className="auth-signout" onClick={() => signOut(auth)}>로그아웃</button></div>{showMyPage && <MyPage user={session} onClose={() => setShowMyPage(false)}/>}</>;
+  return <>{children(session)}<button className="auth-signout" onClick={() => signOut(auth)}>로그아웃</button></>;
 }
 
 function SignIn() {
