@@ -7,6 +7,7 @@ import { doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { deleteAccountTrip } from './tripStore';
 import MyPage from './MyPage';
 import SignOutButton from './SignOutButton';
+import { formatTravelDate } from './dates';
 import { db } from './firebase';
 import { initialLedger } from './budget/model';
 import React, { useState, useEffect, useRef } from 'react';
@@ -263,7 +264,7 @@ const FlightCard = ({ flight, onEdit, onDelete }) => {
         <div className="text-center w-[30%]">
           <p className="text-2xl font-bold text-gray-900">{flight.departure.time}</p>
           <p className="text-[15px] font-semibold text-gray-600 mt-1">{flight.departure.airport}</p>
-          <p className="text-[13px] text-gray-400 mt-0.5">{flight.departure.date}</p>
+          <p className="text-[13px] text-gray-400 mt-0.5">{formatTravelDate(flight.departure.date)}</p>
         </div>
 
         <div className="w-[40%] flex flex-col items-center justify-center px-2">
@@ -278,7 +279,7 @@ const FlightCard = ({ flight, onEdit, onDelete }) => {
         <div className="text-center w-[30%]">
           <p className="text-2xl font-bold text-gray-900">{flight.arrival.time}</p>
           <p className="text-[15px] font-semibold text-gray-600 mt-1">{flight.arrival.airport}</p>
-          <p className="text-[13px] text-gray-400 mt-0.5">{flight.arrival.date}</p>
+          <p className="text-[13px] text-gray-400 mt-0.5">{formatTravelDate(flight.arrival.date)}</p>
         </div>
       </div>
     </div>
@@ -312,12 +313,12 @@ const HotelCard = ({ hotel, onEdit, onDelete }) => {
         <div className="bg-gray-50 rounded-xl p-3.5 flex justify-between items-center border border-gray-100">
           <div className="flex-1">
             <p className="text-[13px] font-semibold text-gray-400 mb-1">체크인</p>
-            <p className="text-[15px] font-bold text-gray-800">{hotel.checkIn}</p>
+            <p className="text-[15px] font-bold text-gray-800">{formatTravelDate(hotel.checkIn)}</p>
           </div>
           <ChevronRight size={16} className="text-gray-300 mx-2" />
           <div className="flex-1 text-right">
             <p className="text-[13px] font-semibold text-gray-400 mb-1">체크아웃</p>
-            <p className="text-[15px] font-bold text-gray-800">{hotel.checkOut}</p>
+            <p className="text-[15px] font-bold text-gray-800">{formatTravelDate(hotel.checkOut)}</p>
           </div>
         </div>
       </div>

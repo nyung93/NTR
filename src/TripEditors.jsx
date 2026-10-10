@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { CalendarDays, PlaneTakeoff, Building2, Trash2, X } from 'lucide-react';
+import { toDateInputValue } from './dates';
 
 export function TripSettingsDialog({ trip, onClose, onSave, onDelete, busy }) {
   const owner = trip.ownerUid === trip.currentUid;
@@ -70,7 +71,17 @@ const emptyFlight = () => ({ type: 'departure', airline: '', flightNumber: '', d
 
 export function DashboardItemEditor({ type, item, onClose, onSave }) {
   const flight = type === 'flight';
-  const [draft, setDraft] = useState(() => item ? structuredClone(item) : flight ? emptyFlight() : { name: '', location: '', checkIn: '', checkOut: '', imageUrl: '' });
+  const [draft, setDraft] = useState(() => {
+    const value = item ? structuredClone(item) : flight ? emptyFlight() : { name: '', location: '', checkIn: '', checkOut: '', imageUrl: '' };
+    if (flight) {
+      value.departure = { ...value.departure, date: toDateInputValue(value.departure?.date) };
+      value.arrival = { ...value.arrival, date: toDateInputValue(value.arrival?.date) };
+    } else {
+      value.checkIn = toDateInputValue(value.checkIn);
+      value.checkOut = toDateInputValue(value.checkOut);
+    }
+    return value;
+  });
   const [error, setError] = useState('');
   const set = (key, value) => setDraft(previous => ({ ...previous, [key]: value }));
   const setRoute = (end, key, value) => setDraft(previous => ({ ...previous, [end]: { ...previous[end], [key]: value } }));
@@ -78,6 +89,9 @@ export function DashboardItemEditor({ type, item, onClose, onSave }) {
     event.preventDefault();
     const required = flight ? [draft.airline, draft.flightNumber, draft.departure.airport, draft.arrival.airport] : [draft.name, draft.location];
     if (required.some(value => !String(value || '').trim())) return setError('필수 항목을 입력해 주세요.');
+    const dates = flight ? [draft.departure.date, draft.arrival.date] : [draft.checkIn, draft.checkOut];
+    if (dates.some(value => !toDateInputValue(value))) return setError('날짜를 달력에서 선택해 주세요.');
+    if (!flight && draft.checkOut < draft.checkIn) return setError('체크아웃 날짜는 체크인 날짜 이후로 선택해 주세요.');
     onSave({ ...draft, id: item?.id || crypto.randomUUID() });
     onClose();
   };
@@ -86,13 +100,13 @@ export function DashboardItemEditor({ type, item, onClose, onSave }) {
     {flight ? <>
       <label>항공사<input value={draft.airline} onChange={e => set('airline', e.target.value)} required/></label>
       <div className="trip-date-grid"><label>편명<input value={draft.flightNumber} onChange={e => set('flightNumber', e.target.value)} required/></label><label>구간<select value={draft.type} onChange={e => set('type', e.target.value)}><option value="departure">출국</option><option value="return">귀국</option></select></label></div>
-      <h3><PlaneTakeoff size={17}/> 출발</h3><div className="trip-date-grid"><label>공항<input value={draft.departure.airport} onChange={e => setRoute('departure', 'airport', e.target.value)} required/></label><label>날짜<input value={draft.departure.date} placeholder="2027.03.04(목)" onChange={e => setRoute('departure', 'date', e.target.value)}/></label><label>시각<input type="time" value={draft.departure.time} onChange={e => setRoute('departure', 'time', e.target.value)}/></label></div>
-      <h3><PlaneTakeoff size={17}/> 도착</h3><div className="trip-date-grid"><label>공항<input value={draft.arrival.airport} onChange={e => setRoute('arrival', 'airport', e.target.value)} required/></label><label>날짜<input value={draft.arrival.date} placeholder="2027.03.04(목)" onChange={e => setRoute('arrival', 'date', e.target.value)}/></label><label>시각<input type="time" value={draft.arrival.time} onChange={e => setRoute('arrival', 'time', e.target.value)}/></label></div>
+      <h3><PlaneTakeoff size={17}/> 출발</h3><div className="trip-date-grid"><label>공항<input value={draft.departure.airport} onChange={e => setRoute('departure', 'airport', e.target.value)} required/></label><label>날짜<input type="date" required value={draft.departure.date} onChange={e => setRoute('departure', 'date', e.target.value)}/></label><label>시각<input type="time" value={draft.departure.time} onChange={e => setRoute('departure', 'time', e.target.value)}/></label></div>
+      <h3><PlaneTakeoff size={17}/> 도착</h3><div className="trip-date-grid"><label>공항<input value={draft.arrival.airport} onChange={e => setRoute('arrival', 'airport', e.target.value)} required/></label><label>날짜<input type="date" required value={draft.arrival.date} onChange={e => setRoute('arrival', 'date', e.target.value)}/></label><label>시각<input type="time" value={draft.arrival.time} onChange={e => setRoute('arrival', 'time', e.target.value)}/></label></div>
       <label>비행 시간<input value={draft.duration} placeholder="3시간 50분 소요" onChange={e => set('duration', e.target.value)}/></label>
     </> : <>
       <label><Building2 size={16}/> 숙소명<input value={draft.name} onChange={e => set('name', e.target.value)} required/></label>
       <label>위치<input value={draft.location} onChange={e => set('location', e.target.value)} required/></label>
-      <div className="trip-date-grid"><label>체크인<input value={draft.checkIn} placeholder="2027.03.04(목)" onChange={e => set('checkIn', e.target.value)}/></label><label>체크아웃<input value={draft.checkOut} placeholder="2027.03.05(금)" onChange={e => set('checkOut', e.target.value)}/></label></div>
+      <div className="trip-date-grid"><label>체크인<input type="date" required value={draft.checkIn} onChange={e => set('checkIn', e.target.value)}/></label><label>체크아웃<input type="date" required min={draft.checkIn || undefined} value={draft.checkOut} onChange={e => set('checkOut', e.target.value)}/></label></div>
       <label>숙소 이미지 주소 (선택)<input type="url" value={draft.imageUrl || ''} onChange={e => set('imageUrl', e.target.value)} placeholder="비워 두면 호텔 일러스트를 사용합니다."/></label>
     </>}
     {error && <p className="trip-modal-message" role="alert">{error}</p>}
